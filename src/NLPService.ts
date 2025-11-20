@@ -12,9 +12,9 @@
  * maintaining purity and explicit effect tracking.
  */
 
-import * as Effect from "effect/Effect"
-import * as Context from "effect/Context"
-import * as Layer from "effect/Layer"
+import * as Effect from "effect/Effect";
+import * as Context from "effect/Context";
+import * as Layer from "effect/Layer";
 
 // =============================================================================
 // Service Definition
@@ -30,32 +30,30 @@ export interface NLPService {
    * Handles common sentence boundaries: . ! ?
    * Preserves sentence terminators
    */
-  readonly sentencize: (text: string) => Effect.Effect<ReadonlyArray<string>>
+  readonly sentencize: (text: string) => Effect.Effect<ReadonlyArray<string>>;
 
   /**
    * Split text into tokens (words)
    * Handles common word boundaries and punctuation
    */
-  readonly tokenize: (text: string) => Effect.Effect<ReadonlyArray<string>>
+  readonly tokenize: (text: string) => Effect.Effect<ReadonlyArray<string>>;
 
   /**
    * Split text into paragraphs
    * Uses double newline as paragraph boundary
    */
-  readonly paragraphize: (
-    text: string
-  ) => Effect.Effect<ReadonlyArray<string>>
+  readonly paragraphize: (text: string) => Effect.Effect<ReadonlyArray<string>>;
 
   /**
    * Normalize whitespace
    * Collapses multiple spaces, trims, removes zero-width characters
    */
-  readonly normalizeWhitespace: (text: string) => Effect.Effect<string>
+  readonly normalizeWhitespace: (text: string) => Effect.Effect<string>;
 
   /**
    * Count words in text
    */
-  readonly wordCount: (text: string) => Effect.Effect<number>
+  readonly wordCount: (text: string) => Effect.Effect<number>;
 
   /**
    * Extract n-grams from text
@@ -63,14 +61,14 @@ export interface NLPService {
   readonly ngrams: (
     text: string,
     n: number
-  ) => Effect.Effect<ReadonlyArray<string>>
+  ) => Effect.Effect<ReadonlyArray<string>>;
 }
 
 /**
  * Context tag for NLPService
  * This allows the service to be provided via Effect's dependency injection
  */
-export const NLPService = Context.GenericTag<NLPService>("NLPService")
+export const NLPService = Context.GenericTag<NLPService>("NLPService");
 
 // =============================================================================
 // Implementation
@@ -85,24 +83,24 @@ export const NLPService = Context.GenericTag<NLPService>("NLPService")
  */
 
 const sentencizeImpl = (text: string): ReadonlyArray<string> => {
-  if (text.trim() === "") return []
+  if (text.trim() === "") return [];
 
   // Split on sentence boundaries while preserving the delimiter
   // Handles: . ! ? with optional quotes/parens
   const sentenceRegex =
-    /(?<=[.!?])\s+(?=[A-Z])|(?<=[.!?]["')\]])\s+(?=[A-Z])|(?<=[.!?])\s*$/g
+    /(?<=[.!?])\s+(?=[A-Z])|(?<=[.!?]["')\]])\s+(?=[A-Z])|(?<=[.!?])\s*$/g;
 
   const sentences = text
     .split(sentenceRegex)
     .map((s) => s.trim())
-    .filter((s) => s.length > 0)
+    .filter((s) => s.length > 0);
 
   // If no sentence boundaries found, return the whole text
-  return sentences.length > 0 ? sentences : [text.trim()]
-}
+  return sentences.length > 0 ? sentences : [text.trim()];
+};
 
 const tokenizeImpl = (text: string): ReadonlyArray<string> => {
-  if (text.trim() === "") return []
+  if (text.trim() === "") return [];
 
   // Split on whitespace and punctuation boundaries
   // Keeps words, numbers, and common contractions together
@@ -115,22 +113,22 @@ const tokenizeImpl = (text: string): ReadonlyArray<string> => {
     // Split on spaces
     .split(" ")
     .map((t) => t.trim())
-    .filter((t) => t.length > 0)
+    .filter((t) => t.length > 0);
 
-  return tokens
-}
+  return tokens;
+};
 
 const paragraphizeImpl = (text: string): ReadonlyArray<string> => {
-  if (text.trim() === "") return []
+  if (text.trim() === "") return [];
 
   // Split on double newline (paragraph boundary)
   const paragraphs = text
     .split(/\n\s*\n/)
     .map((p) => p.trim())
-    .filter((p) => p.length > 0)
+    .filter((p) => p.length > 0);
 
-  return paragraphs.length > 0 ? paragraphs : [text.trim()]
-}
+  return paragraphs.length > 0 ? paragraphs : [text.trim()];
+};
 
 const normalizeWhitespaceImpl = (text: string): string =>
   text
@@ -139,43 +137,45 @@ const normalizeWhitespaceImpl = (text: string): string =>
     // Collapse multiple spaces
     .replace(/\s+/g, " ")
     // Trim
-    .trim()
+    .trim();
 
 const wordCountImpl = (text: string): number => {
-  const tokens = tokenizeImpl(text)
-  return tokens.filter((t) => /\w/.test(t)).length
-}
+  const tokens = tokenizeImpl(text);
+  return tokens.filter((t) => /\w/.test(t)).length;
+};
 
 const ngramsImpl = (text: string, n: number): ReadonlyArray<string> => {
   if (n < 1) {
-    throw new Error("n must be at least 1")
+    throw new Error("n must be at least 1");
   }
 
-  const tokens = tokenizeImpl(text)
+  const tokens = tokenizeImpl(text);
 
-  if (tokens.length < n) return []
+  if (tokens.length < n) return [];
 
-  const grams: string[] = []
+  const grams: string[] = [];
   for (let i = 0; i <= tokens.length - n; i++) {
-    const gram = tokens.slice(i, i + n).join(" ")
-    grams.push(gram)
+    const gram = tokens.slice(i, i + n).join(" ");
+    grams.push(gram);
   }
 
-  return grams
-}
+  return grams;
+};
 
-export const NLPServiceLive: Layer.Layer<NLPService, never, never> = Layer.succeed(
-  NLPService,
-  NLPService.of({
-    sentencize: (text: string) => Effect.sync(() => sentencizeImpl(text)),
-    tokenize: (text: string) => Effect.sync(() => tokenizeImpl(text)),
-    paragraphize: (text: string) => Effect.sync(() => paragraphizeImpl(text)),
-    normalizeWhitespace: (text: string) =>
-      Effect.sync(() => normalizeWhitespaceImpl(text)),
-    wordCount: (text: string) => Effect.sync(() => wordCountImpl(text)),
-    ngrams: (text: string, n: number) => Effect.sync(() => ngramsImpl(text, n))
-  })
-)
+export const NLPServiceLive: Layer.Layer<NLPService, never, never> =
+  Layer.succeed(
+    NLPService,
+    NLPService.of({
+      sentencize: (text: string) => Effect.sync(() => sentencizeImpl(text)),
+      tokenize: (text: string) => Effect.sync(() => tokenizeImpl(text)),
+      paragraphize: (text: string) => Effect.sync(() => paragraphizeImpl(text)),
+      normalizeWhitespace: (text: string) =>
+        Effect.sync(() => normalizeWhitespaceImpl(text)),
+      wordCount: (text: string) => Effect.sync(() => wordCountImpl(text)),
+      ngrams: (text: string, n: number) =>
+        Effect.sync(() => ngramsImpl(text, n)),
+    })
+  );
 
 // =============================================================================
 // Helper Functions for Service Operations
@@ -187,20 +187,21 @@ export const NLPServiceLive: Layer.Layer<NLPService, never, never> = Layer.succe
  */
 export const runNLP = <A, E>(
   operation: Effect.Effect<A, E, NLPService>
-): Effect.Effect<A, E, never> =>
-  Effect.provide(operation, NLPServiceLive)
+): Effect.Effect<A, E, never> => Effect.provide(operation, NLPServiceLive);
 
 /**
  * Sentencize with the live service
  */
-export const sentencize = (text: string): Effect.Effect<ReadonlyArray<string>> =>
-  runNLP(Effect.flatMap(NLPService, svc => svc.sentencize(text)))
+export const sentencize = (
+  text: string
+): Effect.Effect<ReadonlyArray<string>> =>
+  runNLP(Effect.flatMap(NLPService, (svc) => svc.sentencize(text)));
 
 /**
  * Tokenize with the live service
  */
 export const tokenize = (text: string): Effect.Effect<ReadonlyArray<string>> =>
-  runNLP(Effect.flatMap(NLPService, svc => svc.tokenize(text)))
+  runNLP(Effect.flatMap(NLPService, (svc) => svc.tokenize(text)));
 
 /**
  * Paragraphize with the live service
@@ -208,19 +209,19 @@ export const tokenize = (text: string): Effect.Effect<ReadonlyArray<string>> =>
 export const paragraphize = (
   text: string
 ): Effect.Effect<ReadonlyArray<string>> =>
-  runNLP(Effect.flatMap(NLPService, svc => svc.paragraphize(text)))
+  runNLP(Effect.flatMap(NLPService, (svc) => svc.paragraphize(text)));
 
 /**
  * Normalize whitespace with the live service
  */
 export const normalizeWhitespace = (text: string): Effect.Effect<string> =>
-  runNLP(Effect.flatMap(NLPService, svc => svc.normalizeWhitespace(text)))
+  runNLP(Effect.flatMap(NLPService, (svc) => svc.normalizeWhitespace(text)));
 
 /**
  * Count words with the live service
  */
 export const wordCount = (text: string): Effect.Effect<number> =>
-  runNLP(Effect.flatMap(NLPService, svc => svc.wordCount(text)))
+  runNLP(Effect.flatMap(NLPService, (svc) => svc.wordCount(text)));
 
 /**
  * Extract n-grams with the live service
@@ -229,7 +230,7 @@ export const ngrams = (
   text: string,
   n: number
 ): Effect.Effect<ReadonlyArray<string>> =>
-  runNLP(Effect.flatMap(NLPService, svc => svc.ngrams(text, n)))
+  runNLP(Effect.flatMap(NLPService, (svc) => svc.ngrams(text, n)));
 
 // =============================================================================
 // Testing Support
@@ -243,14 +244,17 @@ export const makeMockNLPService = (
   overrides: Partial<NLPService>
 ): Layer.Layer<NLPService> => {
   const defaults: NLPService = {
-    sentencize: text => Effect.succeed([text]),
-    tokenize: text => Effect.succeed(text.split(" ")),
-    paragraphize: text => Effect.succeed([text]),
-    normalizeWhitespace: text => Effect.succeed(text.trim()),
-    wordCount: text => Effect.succeed(text.split(" ").length),
+    sentencize: (text) => Effect.succeed([text]),
+    tokenize: (text) => Effect.succeed(text.split(" ")),
+    paragraphize: (text) => Effect.succeed([text]),
+    normalizeWhitespace: (text) => Effect.succeed(text.trim()),
+    wordCount: (text) => Effect.succeed(text.split(" ").length),
     ngrams: (text, n) =>
-      Effect.succeed(text.split(" ").slice(0, Math.max(0, n)))
-  }
+      Effect.succeed(text.split(" ").slice(0, Math.max(0, n))),
+  };
 
-  return Layer.succeed(NLPService, NLPService.of({ ...defaults, ...overrides }))
-}
+  return Layer.succeed(
+    NLPService,
+    NLPService.of({ ...defaults, ...overrides })
+  );
+};
