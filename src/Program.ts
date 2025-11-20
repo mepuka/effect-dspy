@@ -11,25 +11,24 @@
  * creating layers in the graph that can be folded/reduced as needed.
  */
 
-import * as Effect from "effect/Effect"
 import * as Console from "effect/Console"
+import * as Effect from "effect/Effect"
 import * as EffectGraph from "./EffectGraph.js"
-import * as TypeClass from "./TypeClass.js"
-import * as TextOperations from "./TextOperations.js"
 import { NLPServiceLive } from "./NLPService.js"
+import * as TextOperations from "./TextOperations.js"
+import * as TypeClass from "./TypeClass.js"
 
 // =============================================================================
 // Example 1: Basic Sentencization
 // =============================================================================
 
-const basicSentencizationExample = Effect.gen(function* () {
-  yield* Console.log("=" .repeat(60))
+const basicSentencizationExample = Effect.gen(function*() {
+  yield* Console.log("=".repeat(60))
   yield* Console.log("Example 1: Basic Sentencization")
-  yield* Console.log("=" .repeat(60))
+  yield* Console.log("=".repeat(60))
 
   // Step 1: Create initial graph with a single text node
-  const inputText =
-    "Hello world. This is Effect-DSPy! We model text processing as graph transformations."
+  const inputText = "Hello world. This is Effect-DSPy! We model text processing as graph transformations."
 
   yield* Console.log("\n📝 Input Text:")
   yield* Console.log(`"${inputText}"`)
@@ -51,9 +50,7 @@ const basicSentencizationExample = Effect.gen(function* () {
   // Step 3: Display the graph structure
   yield* Console.log("\n🌲 Graph Structure:")
   yield* Console.log(
-    EffectGraph.show(sentencizedGraph, data =>
-      typeof data === "string" ? `"${data}"` : JSON.stringify(data)
-    )
+    EffectGraph.show(sentencizedGraph, (data) => typeof data === "string" ? `"${data}"` : JSON.stringify(data))
   )
 
   // Step 4: Extract all sentence data
@@ -71,10 +68,10 @@ const basicSentencizationExample = Effect.gen(function* () {
 // Example 2: Sentencization + Tokenization (Multi-level DAG)
 // =============================================================================
 
-const multiLevelExample = Effect.gen(function* () {
+const multiLevelExample = Effect.gen(function*() {
   yield* Console.log("\n\n" + "=".repeat(60))
   yield* Console.log("Example 2: Multi-Level Processing (Sentences → Tokens)")
-  yield* Console.log("=" .repeat(60))
+  yield* Console.log("=".repeat(60))
 
   // Step 1: Create initial graph
   const inputText = "Effect-TS is amazing. Category theory rocks!"
@@ -106,9 +103,7 @@ const multiLevelExample = Effect.gen(function* () {
   // Step 4: Display the complete DAG
   yield* Console.log("\n🌲 Complete DAG Structure:")
   yield* Console.log(
-    EffectGraph.show(tokenizedGraph, data =>
-      typeof data === "string" ? `"${data}"` : JSON.stringify(data)
-    )
+    EffectGraph.show(tokenizedGraph, (data) => typeof data === "string" ? `"${data}"` : JSON.stringify(data))
   )
 })
 
@@ -116,10 +111,10 @@ const multiLevelExample = Effect.gen(function* () {
 // Example 3: Using Catamorphism to Fold the Graph
 // =============================================================================
 
-const catamorphismExample = Effect.gen(function* () {
+const catamorphismExample = Effect.gen(function*() {
   yield* Console.log("\n\n" + "=".repeat(60))
   yield* Console.log("Example 3: Catamorphism (Folding the Graph)")
-  yield* Console.log("=" .repeat(60))
+  yield* Console.log("=".repeat(60))
 
   // Step 1: Build a graph with sentences
   const inputText = "One. Two. Three."
@@ -175,13 +170,12 @@ const catamorphismExample = Effect.gen(function* () {
 // Example 4: Pipeline Composition
 // =============================================================================
 
-const pipelineExample = Effect.gen(function* () {
+const pipelineExample = Effect.gen(function*() {
   yield* Console.log("\n\n" + "=".repeat(60))
   yield* Console.log("Example 4: Pipeline Composition")
-  yield* Console.log("=" .repeat(60))
+  yield* Console.log("=".repeat(60))
 
-  const inputText =
-    "  Hello   World!   This is   a test.  Category theory   is beautiful.  "
+  const inputText = "  Hello   World!   This is   a test.  Category theory   is beautiful.  "
 
   yield* Console.log("\n📝 Input (with messy whitespace):")
   yield* Console.log(`"${inputText}"`)
@@ -203,9 +197,7 @@ const pipelineExample = Effect.gen(function* () {
 
   yield* Console.log("\n🌲 Result:")
   yield* Console.log(
-    EffectGraph.show(processedGraph, data =>
-      typeof data === "string" ? `"${data}"` : JSON.stringify(data)
-    )
+    EffectGraph.show(processedGraph, (data) => typeof data === "string" ? `"${data}"` : JSON.stringify(data))
   )
 })
 
@@ -213,7 +205,7 @@ const pipelineExample = Effect.gen(function* () {
 // Main Program
 // =============================================================================
 
-const program = Effect.gen(function* () {
+const program = Effect.gen(function*() {
   yield* Console.log("\n🚀 Effect-DSPy: Text Processing as Graph Transformations\n")
 
   // Run all examples
@@ -224,7 +216,7 @@ const program = Effect.gen(function* () {
 
   yield* Console.log("\n\n" + "=".repeat(60))
   yield* Console.log("✨ All examples completed successfully!")
-  yield* Console.log("=" .repeat(60))
+  yield* Console.log("=".repeat(60))
   yield* Console.log(
     "\n💡 Key Takeaways:"
   )

@@ -2,12 +2,12 @@
  * Tests for TextOperations module
  */
 
-import { describe, it, expect } from "vitest"
 import * as Effect from "effect/Effect"
+import { describe, expect, it } from "vitest"
 import * as EG from "../src/EffectGraph.js"
-import * as TC from "../src/TypeClass.js"
-import * as TextOps from "../src/TextOperations.js"
 import { NLPServiceLive } from "../src/NLPService.js"
+import * as TextOps from "../src/TextOperations.js"
+import * as TC from "../src/TypeClass.js"
 
 describe("TextOperations", () => {
   describe("Sentencization", () => {

@@ -9,23 +9,17 @@
 // Core graph module
 export * as EffectGraph from "./EffectGraph.js"
 export type {
-  NodeId,
-  GraphNode,
-  NodeMetadata,
   EffectGraph as EffectGraphType,
   GraphAlgebra,
-  GraphCoalgebra
+  GraphCoalgebra,
+  GraphNode,
+  NodeId,
+  NodeMetadata
 } from "./EffectGraph.js"
 
 // Type class abstractions
 export * as TypeClass from "./TypeClass.js"
-export type {
-  TextOperation,
-  Composable,
-  Foldable,
-  FreeOperation,
-  ForgetfulOperation
-} from "./TypeClass.js"
+export type { Composable, Foldable, ForgetfulOperation, FreeOperation, TextOperation } from "./TypeClass.js"
 
 // NLP service
 export * as NLPService from "./NLPService.js"

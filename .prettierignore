@@ -1,0 +1,2 @@
+# Ignore all files - we use ESLint with @effect/dprint for formatting
+*

@@ -2,9 +2,9 @@
  * Tests for EffectGraph module
  */
 
-import { describe, it, expect } from "vitest"
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
+import { describe, expect, it } from "vitest"
 import * as EG from "../src/EffectGraph.js"
 
 describe("EffectGraph", () => {
@@ -178,9 +178,9 @@ describe("EffectGraph", () => {
       graph = EG.addNode(graph, child1)
       graph = EG.addNode(graph, child2)
 
-      const algebra: EG.GraphAlgebra<string, string[]> = (
+      const algebra: EG.GraphAlgebra<string, Array<string>> = (
         node: EG.GraphNode<string>,
-        children: ReadonlyArray<string[]>
+        children: ReadonlyArray<Array<string>>
       ) => {
         const allChildren = children.flat()
         return [...allChildren, node.data]

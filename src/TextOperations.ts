@@ -17,9 +17,9 @@
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as EG from "./EffectGraph.js"
-import type { TextOperation, ForgetfulOperation } from "./TypeClass.js"
-import * as TC from "./TypeClass.js"
 import { NLPService } from "./NLPService.js"
+import type { ForgetfulOperation, TextOperation } from "./TypeClass.js"
+import * as TC from "./TypeClass.js"
 
 // =============================================================================
 // Core Text Operations
@@ -44,16 +44,13 @@ export const sentencizeOperation: TextOperation<
   NLPService,
   never
 > = TC.makeOperation("sentencize", (node) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const nlp = yield* NLPService
     const sentences = yield* nlp.sentencize(node.data)
 
     // Create a child node for each sentence
-    return sentences.map(sentence =>
-      EG.makeNode(sentence, Option.some(node.id), Option.some("sentencize"))
-    )
-  })
-)
+    return sentences.map((sentence) => EG.makeNode(sentence, Option.some(node.id), Option.some("sentencize")))
+  }))
 
 /**
  * Tokenization Operation
@@ -74,16 +71,13 @@ export const tokenizeOperation: TextOperation<
   NLPService,
   never
 > = TC.makeOperation("tokenize", (node) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const nlp = yield* NLPService
     const tokens = yield* nlp.tokenize(node.data)
 
     // Create a child node for each token
-    return tokens.map(token =>
-      EG.makeNode(token, Option.some(node.id), Option.some("tokenize"))
-    )
-  })
-)
+    return tokens.map((token) => EG.makeNode(token, Option.some(node.id), Option.some("tokenize")))
+  }))
 
 /**
  * Paragraphization Operation
@@ -101,15 +95,12 @@ export const paragraphizeOperation: TextOperation<
   NLPService,
   never
 > = TC.makeOperation("paragraphize", (node) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const nlp = yield* NLPService
     const paragraphs = yield* nlp.paragraphize(node.data)
 
-    return paragraphs.map(paragraph =>
-      EG.makeNode(paragraph, Option.some(node.id), Option.some("paragraphize"))
-    )
-  })
-)
+    return paragraphs.map((paragraph) => EG.makeNode(paragraph, Option.some(node.id), Option.some("paragraphize")))
+  }))
 
 /**
  * Normalize Operation
@@ -127,15 +118,14 @@ export const normalizeOperation: TextOperation<
   NLPService,
   never
 > = TC.makeOperation("normalize", (node) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const nlp = yield* NLPService
     const normalized = yield* nlp.normalizeWhitespace(node.data)
 
     return [
       EG.makeNode(normalized, Option.some(node.id), Option.some("normalize"))
     ]
-  })
-)
+  }))
 
 // =============================================================================
 // Forgetful Operations (Aggregation - Many to One)
@@ -161,7 +151,7 @@ export const joinOperation = (
   apply: (nodes) =>
     Effect.succeed(
       EG.makeNode(
-        nodes.map(n => n.data).join(separator),
+        nodes.map((n) => n.data).join(separator),
         nodes.length > 0 ? Option.some(nodes[0]!.id) : Option.none(),
         Option.some(`join(${separator})`)
       )
@@ -195,7 +185,7 @@ export const summaryOperation = (
   name: "summary",
   apply: (nodes) => {
     const summaries = nodes
-      .map(n => n.data.slice(0, maxCharsPerNode))
+      .map((n) => n.data.slice(0, maxCharsPerNode))
       .join("... ")
 
     return Effect.succeed(
@@ -277,7 +267,7 @@ export const wordCountOperation: TextOperation<
   NLPService,
   never
 > = TC.makeOperation("wordCount", (node) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const nlp = yield* NLPService
     const count = yield* nlp.wordCount(node.data)
 
@@ -288,8 +278,7 @@ export const wordCountOperation: TextOperation<
         Option.some("wordCount")
       )
     ]
-  })
-)
+  }))
 
 /**
  * N-gram Operation
@@ -301,15 +290,12 @@ export const ngramOperation = (
   n: number
 ): TextOperation<string, string, NLPService, Error> =>
   TC.makeOperation(`${n}-gram`, (node) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const nlp = yield* NLPService
       const grams = yield* nlp.ngrams(node.data, n)
 
-      return grams.map(gram =>
-        EG.makeNode(gram, Option.some(node.id), Option.some(`${n}-gram`))
-      )
-    })
-  )
+      return grams.map((gram) => EG.makeNode(gram, Option.some(node.id), Option.some(`${n}-gram`)))
+    }))
 
 // =============================================================================
 // Filtering Operations
@@ -327,7 +313,7 @@ export const filterByLength = (
 ): TextOperation<string, string, never, never> =>
   TC.filterOperation(
     `filter(${minLength}-${maxLength})`,
-    text => text.length >= minLength && text.length <= maxLength
+    (text) => text.length >= minLength && text.length <= maxLength
   )
 
 /**
@@ -337,8 +323,7 @@ export const filterByLength = (
  */
 export const filterByPattern = (
   pattern: RegExp
-): TextOperation<string, string, never, never> =>
-  TC.filterOperation(`filter(${pattern})`, text => pattern.test(text))
+): TextOperation<string, string, never, never> => TC.filterOperation(`filter(${pattern})`, (text) => pattern.test(text))
 
 // =============================================================================
 // Transformation Operations
@@ -347,20 +332,23 @@ export const filterByPattern = (
 /**
  * Lowercase Operation
  */
-export const lowercaseOperation: TextOperation<string, string, never, never> =
-  TC.mapOperation("lowercase", text => text.toLowerCase())
+export const lowercaseOperation: TextOperation<string, string, never, never> = TC.mapOperation(
+  "lowercase",
+  (text) => text.toLowerCase()
+)
 
 /**
  * Uppercase Operation
  */
-export const uppercaseOperation: TextOperation<string, string, never, never> =
-  TC.mapOperation("uppercase", text => text.toUpperCase())
+export const uppercaseOperation: TextOperation<string, string, never, never> = TC.mapOperation(
+  "uppercase",
+  (text) => text.toUpperCase()
+)
 
 /**
  * Trim Operation
  */
-export const trimOperation: TextOperation<string, string, never, never> =
-  TC.mapOperation("trim", text => text.trim())
+export const trimOperation: TextOperation<string, string, never, never> = TC.mapOperation("trim", (text) => text.trim())
 
 // =============================================================================
 // Pipeline Builders

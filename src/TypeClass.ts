@@ -13,7 +13,7 @@
 
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
-import type { GraphNode, EffectGraph } from "./EffectGraph.js"
+import type { EffectGraph, GraphNode } from "./EffectGraph.js"
 import * as EG from "./EffectGraph.js"
 
 // =============================================================================
@@ -61,11 +61,8 @@ export const purOperation = <A, B>(
 ): TextOperation<A, B, never, never> =>
   makeOperation(name, (node) =>
     Effect.succeed(
-      f(node.data).map(b =>
-        EG.makeNode(b, Option.some(node.id), Option.some(name))
-      )
-    )
-  )
+      f(node.data).map((b) => EG.makeNode(b, Option.some(node.id), Option.some(name)))
+    ))
 
 // =============================================================================
 // Composable Type Class (Monoid Structure)
@@ -100,8 +97,7 @@ export const identityOperation = <A>(): TextOperation<A, A, never, never> =>
         id: EG.NodeId.generate(),
         parentId: Option.some(node.id)
       }
-    ])
-  )
+    ]))
 
 /**
  * Compose two operations sequentially
@@ -112,19 +108,18 @@ export const composeOperations = <A, B, C, R, E>(
   second: TextOperation<B, C, R, E>
 ): TextOperation<A, C, R, E> =>
   makeOperation(`${first.name} -> ${second.name}`, (node) =>
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       // Apply first operation
       const intermediateNodes = yield* first.apply(node)
 
       // Apply second operation to each result
       const results = yield* Effect.all(
-        intermediateNodes.map(intermediate => second.apply(intermediate))
+        intermediateNodes.map((intermediate) => second.apply(intermediate))
       )
 
       // Flatten the results
       return results.flat()
-    })
-  )
+    }))
 
 // =============================================================================
 // Foldable Type Class
@@ -186,7 +181,7 @@ export const executeOperation = <A, B, R, E>(
   graph: EffectGraph<A>,
   operation: TextOperation<A, B, R, E>
 ): Effect.Effect<EffectGraph<A | B>, E, R> =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Cast the graph to handle both A and B types
     let resultGraph: EffectGraph<A | B> = graph as EffectGraph<A | B>
 
@@ -211,7 +206,7 @@ export const executeOperation = <A, B, R, E>(
  */
 const getLeafNodes = <A>(graph: EffectGraph<A>): ReadonlyArray<GraphNode<A>> => {
   const allNodes = EG.toArray(graph)
-  return allNodes.filter(node => EG.getChildren(graph, node.id).length === 0)
+  return allNodes.filter((node) => EG.getChildren(graph, node.id).length === 0)
 }
 
 /**
@@ -222,7 +217,7 @@ export const executeOperations = <A, R, E>(
   graph: EffectGraph<A>,
   operations: ReadonlyArray<TextOperation<any, any, R, E>>
 ): Effect.Effect<EffectGraph<any>, E, R> =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     let currentGraph: EffectGraph<any> = graph
 
     for (const operation of operations) {
@@ -296,8 +291,7 @@ export const makeAdjunction = <A, B, R, E>(
 export const mapOperation = <A, B>(
   name: string,
   f: (a: A) => B
-): TextOperation<A, B, never, never> =>
-  purOperation(name, (a) => [f(a)])
+): TextOperation<A, B, never, never> => purOperation(name, (a) => [f(a)])
 
 /**
  * Filter operation: Keep only nodes that satisfy a predicate
@@ -305,8 +299,7 @@ export const mapOperation = <A, B>(
 export const filterOperation = <A>(
   name: string,
   predicate: (a: A) => boolean
-): TextOperation<A, A, never, never> =>
-  purOperation(name, (a) => (predicate(a) ? [a] : []))
+): TextOperation<A, A, never, never> => purOperation(name, (a) => (predicate(a) ? [a] : []))
 
 /**
  * FlatMap operation: Map and flatten in one step
@@ -319,8 +312,7 @@ export const flatMapOperation = <A, B>(
 /**
  * Traverse the graph and collect all data values
  */
-export const collectData = <A>(graph: EffectGraph<A>): ReadonlyArray<A> =>
-  EG.toArray(graph).map(node => node.data)
+export const collectData = <A>(graph: EffectGraph<A>): ReadonlyArray<A> => EG.toArray(graph).map((node) => node.data)
 
 /**
  * Get the depth of the graph (longest path from root to leaf)
