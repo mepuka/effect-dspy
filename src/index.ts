@@ -42,3 +42,25 @@ export type {
 
 // Text operations
 export * as TextOperations from "./TextOperations.js"
+
+// NLP Backend abstraction
+export * as NLPBackend from "./NLPBackend.js"
+export type {
+  BackendCapabilities,
+  BackendInitError,
+  BackendNotSupported,
+  BackendOperationError,
+  NLPBackend as NLPBackendInterface,
+  NLPBackendError
+} from "./NLPBackend.js"
+
+// NLP Backend implementations
+export * as Backends from "./Backends/index.js"
+
+// Annotated Text Graphs
+export * as AnnotatedTextGraph from "./AnnotatedTextGraph.js"
+export type {
+  AnnotatedNode,
+  AnnotatedTextGraph as AnnotatedTextGraphType,
+  MutableAnnotatedTextGraph
+} from "./AnnotatedTextGraph.js"

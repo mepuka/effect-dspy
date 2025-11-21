@@ -12,6 +12,7 @@ import model from "wink-eng-lite-web-model"
 import winkNLP from "wink-nlp"
 // @ts-ignore - wink-nlp-utils doesn't have type definitions
 import nlpUtilsModule from "wink-nlp-utils"
+import * as S from "./Schema.js"
 
 const nlpUtils = nlpUtilsModule.default || nlpUtilsModule
 
@@ -151,6 +152,46 @@ export interface NLPService {
    * Forms a metric space
    */
   readonly stringSimilarity: (s1: string, s2: string) => Effect.Effect<number>
+
+  // =======================================================================
+  // Linguistic Annotation Operations
+  // =======================================================================
+
+  /**
+   * Tag tokens with part-of-speech labels
+   *
+   * Category theory: Forms a functor [Token] -> [POSNode]
+   * that enriches tokens with grammatical categories.
+   *
+   * Algebraic property: Preserves token count
+   *   |posTag(text)| = |tokenize(text)|
+   */
+  readonly posTag: (text: string) => Effect.Effect<ReadonlyArray<S.POSNode>>
+
+  /**
+   * Extract named entities from text
+   *
+   * Category theory: Forms a functor Text -> [Entity]
+   * that projects semantic spans from raw text.
+   *
+   * Examples: PERSON, ORG, GPE, DATE, etc.
+   */
+  readonly extractEntities: (
+    text: string
+  ) => Effect.Effect<ReadonlyArray<S.EntityNode>>
+
+  /**
+   * Lemmatize tokens to canonical forms
+   *
+   * Category theory: Forms a forgetful functor [Token] -> [Lemma]
+   * that discards inflectional morphology.
+   *
+   * Algebraic property: Idempotent
+   *   lemmatize(lemmatize(x)) = lemmatize(x)
+   *
+   * Examples: running -> run, better -> good, was -> be
+   */
+  readonly lemmatize: (text: string) => Effect.Effect<ReadonlyArray<S.LemmaNode>>
 
   /**
    * Get the underlying Wink NLP instance for advanced operations
@@ -365,6 +406,119 @@ const makeNLPService = Effect.sync(() => {
 
   const stringSimilarityImpl = (s1: string, s2: string): number => (s1 === s2 ? 1 : jaroWinklerSimilarity(s1, s2))
 
+  // =======================================================================
+  // Linguistic Annotation Implementations
+  // =======================================================================
+
+  /**
+   * POS tagging implementation using Wink NLP
+   *
+   * Wink NLP provides POS tags using the Penn Treebank tagset.
+   * Each token is annotated with its grammatical category.
+   */
+  const posTagImpl = (text: string): ReadonlyArray<S.POSNode> => {
+    if (text.trim() === "") return []
+
+    const doc = nlp.readDoc(text)
+    const tokens = doc.tokens()
+    const result: Array<S.POSNode> = []
+
+    let index = 0
+    tokens.each((token: any) => {
+      result.push(
+        new S.POSNode({
+          text: token.out(),
+          tag: token.out("pos") || "UNKNOWN",
+          description: token.out("detail"),
+          position: index,
+          timestamp: Date.now()
+        })
+      )
+      index++
+    })
+
+    return result
+  }
+
+  /**
+   * Named Entity Recognition implementation using Wink NLP
+   *
+   * NOTE: Wink NLP lite doesn't include full NER capabilities.
+   * This is a placeholder implementation that returns empty results.
+   * For production NER, use a backend like Stanford CoreNLP or spaCy.
+   *
+   * TODO: Implement proper NER when backend abstraction is ready
+   */
+  const extractEntitiesImpl = (text: string): ReadonlyArray<S.EntityNode> => {
+    if (text.trim() === "") return []
+
+    // Wink NLP lite doesn't support entities directly
+    // This is a placeholder - will be implemented with backend abstraction
+    const result: Array<S.EntityNode> = []
+
+    // TODO: When backend abstraction is ready, call the appropriate backend
+    // For now, we can do basic pattern matching for capitalized words as a demo
+    const words = text.split(/\s+/)
+    let charOffset = 0
+
+    for (const word of words) {
+      // Simple heuristic: capitalized words might be entities
+      if (word.length > 0 && /^[A-Z]/.test(word)) {
+        const cleanWord = word.replace(/[^\w]/g, "")
+        if (cleanWord.length > 2) {
+          const start = text.indexOf(word, charOffset)
+          const end = start + word.length
+
+          result.push(
+            new S.EntityNode({
+              text: cleanWord,
+              entityType: "UNKNOWN", // Would be PERSON, ORG, etc. with real NER
+              span: { start, end },
+              timestamp: Date.now()
+            })
+          )
+        }
+      }
+      charOffset += word.length + 1
+    }
+
+    return result
+  }
+
+  /**
+   * Lemmatization implementation using Wink NLP
+   *
+   * Wink NLP provides lemmatization that reduces tokens to their dictionary forms.
+   * This is idempotent: lemmatizing a lemma returns the same lemma.
+   */
+  const lemmatizeImpl = (text: string): ReadonlyArray<S.LemmaNode> => {
+    if (text.trim() === "") return []
+
+    const doc = nlp.readDoc(text)
+    const tokens = doc.tokens()
+    const result: Array<S.LemmaNode> = []
+
+    let index = 0
+    tokens.each((token: any) => {
+      const tokenText = token.out()
+      const lemma = token.out("lemma") || tokenText // Fallback to original if no lemma
+      const pos = token.out("pos")
+
+      result.push(
+        new S.LemmaNode({
+          token: tokenText,
+          lemma,
+          pos,
+          position: index,
+          timestamp: Date.now()
+        })
+      )
+      index++
+    })
+
+    return result
+  }
+
   return {
     sentencize: (text: string) => Effect.sync(() => sentencizeImpl(text)),
     tokenize: (text: string) => Effect.sync(() => tokenizeImpl(text)),
@@ -379,6 +533,9 @@ const makeNLPService = Effect.sync(() => {
     ngrams: (text: string, n: number) => Effect.sync(() => ngramsImpl(text, n)),
     bagOfWords: (tokens: ReadonlyArray<string>) => Effect.sync(() => bagOfWordsImpl(tokens)),
     stringSimilarity: (s1: string, s2: string) => Effect.sync(() => stringSimilarityImpl(s1, s2)),
+    posTag: (text: string) => Effect.sync(() => posTagImpl(text)),
+    extractEntities: (text: string) => Effect.sync(() => extractEntitiesImpl(text)),
+    lemmatize: (text: string) => Effect.sync(() => lemmatizeImpl(text)),
     getWink: () => Effect.succeed(nlp)
   } satisfies NLPService
 })
@@ -488,6 +645,30 @@ export const stringSimilarity = (
   s2: string
 ): Effect.Effect<number, never, NLPService> => Effect.flatMap(NLPService, (svc) => svc.stringSimilarity(s1, s2))
 
+/**
+ * POS tag tokens with the live service
+ */
+export const posTag = (
+  text: string
+): Effect.Effect<ReadonlyArray<S.POSNode>, never, NLPService> =>
+  Effect.flatMap(NLPService, (svc) => svc.posTag(text))
+
+/**
+ * Extract named entities with the live service
+ */
+export const extractEntities = (
+  text: string
+): Effect.Effect<ReadonlyArray<S.EntityNode>, never, NLPService> =>
+  Effect.flatMap(NLPService, (svc) => svc.extractEntities(text))
+
+/**
+ * Lemmatize text with the live service
+ */
+export const lemmatize = (
+  text: string
+): Effect.Effect<ReadonlyArray<S.LemmaNode>, never, NLPService> =>
+  Effect.flatMap(NLPService, (svc) => svc.lemmatize(text))
+
 // =============================================================================
 // Testing Support
 // =============================================================================
@@ -525,6 +706,29 @@ export const makeMockNLPService = (
       return Effect.succeed(bow)
     },
     stringSimilarity: (s1, s2) => Effect.succeed(s1 === s2 ? 1.0 : 0.0),
+    posTag: (text) =>
+      Effect.succeed(
+        text.split(" ").map((token, index) =>
+          new S.POSNode({
+            text: token,
+            tag: "NN",
+            position: index,
+            timestamp: Date.now()
+          })
+        )
+      ),
+    extractEntities: (text) => Effect.succeed([]),
+    lemmatize: (text) =>
+      Effect.succeed(
+        text.split(" ").map((token, index) =>
+          new S.LemmaNode({
+            token,
+            lemma: token.toLowerCase(),
+            position: index,
+            timestamp: Date.now()
+          })
+        )
+      ),
     getWink: () => Effect.succeed({} as WinkNLPInstance)
   }
 

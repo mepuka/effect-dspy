@@ -45,13 +45,14 @@ export type TextKind =
   | "Sentence"
   | "Token"
   | "Character"
-  // Semantic extractions (orthogonal to structural hierarchy)
+  // Linguistic annotations (orthogonal to structural hierarchy)
+  | "POS" // Part-of-speech tagged token
+  | "Lemma" // Lemmatized (canonical) form of token
   | "Entity" // Named entities (PERSON, ORG, LOC, etc.)
   | "Relation" // Semantic relations (subject-verb-object, etc.)
-  | "Embedding" // Vector representation in semantic space
   | "Dependency" // Syntactic dependency arc (head-relation-dependent)
   | "Chunk" // Shallow parsing chunks (NP, VP, etc.)
-  | "POS" // Part-of-speech tagged token
+  | "Embedding" // Vector representation in semantic space
 
 /**
  * Schema for TextKind (for validation and serialization)
@@ -63,12 +64,13 @@ export const TextKindSchema = Schema.Union(
   Schema.Literal("Sentence"),
   Schema.Literal("Token"),
   Schema.Literal("Character"),
+  Schema.Literal("POS"),
+  Schema.Literal("Lemma"),
   Schema.Literal("Entity"),
   Schema.Literal("Relation"),
-  Schema.Literal("Embedding"),
   Schema.Literal("Dependency"),
   Schema.Literal("Chunk"),
-  Schema.Literal("POS")
+  Schema.Literal("Embedding")
 )
 
 // =============================================================================
@@ -279,6 +281,22 @@ export const POS = (
   ...(metadata !== undefined ? { metadata } : {})
 })
 
+/**
+ * Create a Lemma-level typed text
+ * Lemmas are canonical (dictionary) forms of tokens.
+ *
+ * Example:
+ *   const lemma = Lemma("run", { original: "running" })
+ */
+export const Lemma = (
+  content: string,
+  metadata?: Record<string, unknown>
+): TypedText<"Lemma"> => ({
+  kind: "Lemma",
+  content,
+  ...(metadata !== undefined ? { metadata } : {})
+})
+
 // =============================================================================
 // Kind Relations (Partial Order Structure)
 // =============================================================================
@@ -293,14 +311,15 @@ export type KindContainment = {
   readonly Document: ["Paragraph", "Sentence"]
   readonly Paragraph: ["Sentence"]
   readonly Sentence: ["Token", "Chunk", "Dependency", "Entity", "Relation"]
-  readonly Token: ["Character", "POS"]
+  readonly Token: ["Character", "POS", "Lemma"]
   readonly Character: []
+  readonly POS: []
+  readonly Lemma: []
   readonly Entity: []
   readonly Relation: []
-  readonly Embedding: []
   readonly Dependency: []
   readonly Chunk: ["Token"]
-  readonly POS: []
+  readonly Embedding: []
 }
 
 /**
@@ -315,14 +334,15 @@ export const canContain = <K1 extends TextKind, K2 extends TextKind>(
     Document: ["Paragraph", "Sentence"],
     Paragraph: ["Sentence"],
     Sentence: ["Token", "Chunk", "Dependency", "Entity", "Relation"],
-    Token: ["Character", "POS"],
+    Token: ["Character", "POS", "Lemma"],
     Character: [],
+    POS: [],
+    Lemma: [],
     Entity: [],
     Relation: [],
-    Embedding: [],
     Dependency: [],
     Chunk: ["Token"],
-    POS: []
+    Embedding: []
   }
 
   return (containment[parent] as ReadonlyArray<TextKind>).includes(child)
@@ -338,14 +358,15 @@ export const getValidChildren = <K extends TextKind>(
     Document: ["Paragraph", "Sentence"],
     Paragraph: ["Sentence"],
     Sentence: ["Token", "Chunk", "Dependency", "Entity", "Relation"],
-    Token: ["Character", "POS"],
+    Token: ["Character", "POS", "Lemma"],
     Character: [],
+    POS: [],
+    Lemma: [],
     Entity: [],
     Relation: [],
-    Embedding: [],
     Dependency: [],
     Chunk: ["Token"],
-    POS: []
+    Embedding: []
   }
 
   return containment[kind]
