@@ -12,42 +12,6 @@ import * as GraphOps from "../src/GraphOps.js"
 import * as S from "../src/Schema.js"
 
 describe("Bug Fixes from Code Review", () => {
-  // ==========================================================================
-  // Fix 1: Jaro Similarity Inversion
-  // ==========================================================================
-
-  describe("Jaro similarity (no longer inverted)", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should return 1.0 for identical strings",
-      () =>
-        Effect.gen(function*() {
-          const nlp = yield* NLP.NLPService
-          const similarity = yield* nlp.stringSimilarity("hello", "hello")
-          expect(similarity).toBe(1.0)
-        })
-    )
-
-    it.layer(NLP.NLPServiceLive)(
-      "should return ~0 for completely different strings",
-      () =>
-        Effect.gen(function*() {
-          const nlp = yield* NLP.NLPService
-          const similarity = yield* nlp.stringSimilarity("abc", "xyz")
-          expect(similarity).toBeLessThan(0.5) // Should be low for dissimilar strings
-        })
-    )
-
-    it.layer(NLP.NLPServiceLive)(
-      "should return value in [0, 1] range",
-      () =>
-        Effect.gen(function*() {
-          const nlp = yield* NLP.NLPService
-          const similarity = yield* nlp.stringSimilarity("test", "text")
-          expect(similarity).toBeGreaterThanOrEqual(0)
-          expect(similarity).toBeLessThanOrEqual(1)
-        })
-    )
-  })
 
   // ==========================================================================
   // Fix 2: Depth Computation (BFS, handles DAGs correctly)
@@ -92,58 +56,97 @@ describe("Bug Fixes from Code Review", () => {
     })
   })
 
-  // ==========================================================================
-  // Fix 3: tokenizeNodes Idempotency
-  // ==========================================================================
+})
 
-  describe("tokenizeNodes idempotency", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should not create duplicate tokens on second call",
-      () =>
-        Effect.gen(function*() {
-          // Create a graph with a sentence
-          const graph = yield* TextGraph.fromDocument("Hello world.")
+// =============================================================================
+// Jaro Similarity Tests
+// =============================================================================
 
-          // Tokenize once
-          const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
-          const count1 = TextGraph.nodeCount(tokenized1)
+describe("Jaro similarity (no longer inverted)", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should return 1.0 for identical strings",
+    () =>
+      Effect.gen(function*() {
+        const nlp = yield* NLP.NLPService
+        const similarity = yield* nlp.stringSimilarity("hello", "hello")
+        expect(similarity).toBe(1.0)
+      })
+  )
 
-          // Tokenize again (should be idempotent)
-          const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
-          const count2 = TextGraph.nodeCount(tokenized2)
+  it.layer(NLP.NLPServiceLive)(
+    "should return ~0 for completely different strings",
+    () =>
+      Effect.gen(function*() {
+        const nlp = yield* NLP.NLPService
+        const similarity = yield* nlp.stringSimilarity("abc", "xyz")
+        expect(similarity).toBeLessThan(0.5) // Should be low for dissimilar strings
+      })
+  )
 
-          // Node count should be the same (no duplicates)
-          expect(count2).toBe(count1)
-        })
-    )
+  it.layer(NLP.NLPServiceLive)(
+    "should return value in [0, 1] range",
+    () =>
+      Effect.gen(function*() {
+        const nlp = yield* NLP.NLPService
+        const similarity = yield* nlp.stringSimilarity("test", "text")
+        expect(similarity).toBeGreaterThanOrEqual(0)
+        expect(similarity).toBeLessThanOrEqual(1)
+      })
+  )
+})
 
-    it.layer(NLP.NLPServiceLive)(
-      "should skip sentences that already have tokens",
-      () =>
-        Effect.gen(function*() {
-          const graph = yield* TextGraph.fromDocument("Test sentence.")
+// =============================================================================
+// tokenizeNodes Idempotency Tests
+// =============================================================================
 
-          // First tokenization
-          const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
+describe("tokenizeNodes idempotency", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should not create duplicate tokens on second call",
+    () =>
+      Effect.gen(function*() {
+        // Create a graph with a sentence
+        const graph = yield* TextGraph.fromDocument("Hello world.")
 
-          // Get all token nodes
-          const tokens1 = TextGraph.findNodesByType(tokenized1, "token")
+        // Tokenize once
+        const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
+        const count1 = TextGraph.nodeCount(tokenized1)
 
-          // Second tokenization (should skip)
-          const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
-          const tokens2 = TextGraph.findNodesByType(tokenized2, "token")
+        // Tokenize again (should be idempotent)
+        const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
+        const count2 = TextGraph.nodeCount(tokenized2)
 
-          // Token count should be identical
-          expect(tokens2.length).toBe(tokens1.length)
-        })
-    )
-  })
+        // Node count should be the same (no duplicates)
+        expect(count2).toBe(count1)
+      })
+  )
 
-  // ==========================================================================
-  // Fix 4: Acyclicity Validation in addChildren
-  // ==========================================================================
+  it.layer(NLP.NLPServiceLive)(
+    "should skip sentences that already have tokens",
+    () =>
+      Effect.gen(function*() {
+        const graph = yield* TextGraph.fromDocument("Test sentence.")
 
-  describe("addChildren acyclicity validation", () => {
+        // First tokenization
+        const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
+
+        // Get all token nodes
+        const tokens1 = TextGraph.findNodesByType(tokenized1, "token")
+
+        // Second tokenization (should skip)
+        const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
+        const tokens2 = TextGraph.findNodesByType(tokenized2, "token")
+
+        // Token count should be identical
+        expect(tokens2.length).toBe(tokens1.length)
+      })
+  )
+})
+
+// =============================================================================
+// addChildren Acyclicity Validation Tests
+// =============================================================================
+
+describe("addChildren acyclicity validation", () => {
     it("should validate acyclicity", () => {
       // Note: In a DAG, adding new children typically doesn't create cycles
       // unless we manually construct edges back to ancestors.
@@ -191,36 +194,35 @@ describe("Bug Fixes from Code Review", () => {
       expect(TextGraph.nodeCount(result)).toBe(2)
       expect(TextGraph.isAcyclic(result)).toBe(true)
     })
-  })
+})
 
-  // ==========================================================================
-  // Fix 5: Duplicate Tokenization in parallelFeaturePipeline
-  // ==========================================================================
+// =============================================================================
+// parallelFeaturePipeline Tests
+// =============================================================================
 
-  describe("parallelFeaturePipeline (no duplicate tokenization)", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should tokenize only once and reuse results",
-      () =>
-        Effect.gen(function*() {
-          const text = "Hello world. This is a test."
+describe("parallelFeaturePipeline (no duplicate tokenization)", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should tokenize only once and reuse results",
+    () =>
+      Effect.gen(function*() {
+        const text = "Hello world. This is a test."
 
-          // Run pipeline
-          const result = yield* Pipeline.parallelFeaturePipeline(text)
+        // Run pipeline
+        const result = yield* Pipeline.parallelFeaturePipeline(text)
 
-          // Verify all features are present
-          expect(result.tokens.length).toBeGreaterThan(0)
-          expect(result.bigrams.length).toBeGreaterThan(0)
-          expect(result.trigrams.length).toBeGreaterThan(0)
-          expect(result.bow.size).toBeGreaterThan(0)
+        // Verify all features are present
+        expect(result.tokens.length).toBeGreaterThan(0)
+        expect(result.bigrams.length).toBeGreaterThan(0)
+        expect(result.trigrams.length).toBeGreaterThan(0)
+        expect(result.bow.size).toBeGreaterThan(0)
 
-          // The BOW should have the same words as tokens
-          const tokenSet = new Set(result.tokens)
-          result.bow.forEach((_, term) => {
-            expect(tokenSet.has(term)).toBe(true)
-          })
+        // The BOW should have the same words as tokens
+        const tokenSet = new Set(result.tokens)
+        result.bow.forEach((_, term) => {
+          expect(tokenSet.has(term)).toBe(true)
         })
-    )
-  })
+      })
+  )
 })
 
 // =============================================================================

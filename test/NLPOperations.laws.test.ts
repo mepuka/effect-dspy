@@ -26,130 +26,143 @@ describe("Idempotence Laws", () => {
   it.layer(NLP.NLPServiceLive)(
     "should be idempotent: normalize(normalize(x)) = normalize(x)",
     () =>
-      fc.assert(
-        fc.asyncProperty(fc.string(), async (text) => {
-          const program = Effect.gen(function*() {
-            const nlp = yield* NLP.NLPService
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(fc.string(), async (text) => {
+            const program = Effect.gen(function*() {
+              const nlp = yield* NLP.NLPService
 
-            // Apply normalization once
-            const once = yield* nlp.normalizeWhitespace(text)
+              // Apply normalization once
+              const once = yield* nlp.normalizeWhitespace(text)
 
-            // Apply normalization twice
-            const twice = yield* nlp.normalizeWhitespace(once)
+              // Apply normalization twice
+              const twice = yield* nlp.normalizeWhitespace(once)
 
-            return once === twice
+              return once === twice
+            })
+
+            return await Effect.runPromise(
+              program.pipe(Effect.provide(NLP.NLPServiceLive))
+            )
           })
-
-          return await Effect.runPromise(
-            program.pipe(Effect.provide(NLP.NLPServiceLive))
-          )
-        })
+        )
       )
   )
 
   it.layer(NLP.NLPServiceLive)(
     "should be idempotent: remove(remove(x)) = remove(x)",
     () =>
-      fc.assert(
-        fc.asyncProperty(fc.string(), async (text) => {
-          const program = Effect.gen(function*() {
-            const nlp = yield* NLP.NLPService
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(fc.string(), async (text) => {
+            const program = Effect.gen(function*() {
+              const nlp = yield* NLP.NLPService
 
-            const once = yield* nlp.removePunctuation(text)
-            const twice = yield* nlp.removePunctuation(once)
+              const once = yield* nlp.removePunctuation(text)
+              const twice = yield* nlp.removePunctuation(once)
 
-            return once === twice
+              return once === twice
+            })
+
+            return await Effect.runPromise(
+              program.pipe(Effect.provide(NLP.NLPServiceLive))
+            )
           })
-
-          return await Effect.runPromise(
-            program.pipe(Effect.provide(NLP.NLPServiceLive))
-          )
-        })
+        )
       )
   )
 
   it.layer(NLP.NLPServiceLive)(
-    "should be idempotent: remove(remove(x)) = remove(x)",
+    "should be idempotent: removeExtraSpaces(removeExtraSpaces(x)) = removeExtraSpaces(x)",
     () =>
-      fc.assert(
-        fc.asyncProperty(fc.string(), async (text) => {
-          const program = Effect.gen(function*() {
-            const nlp = yield* NLP.NLPService
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(fc.string(), async (text) => {
+            const program = Effect.gen(function*() {
+              const nlp = yield* NLP.NLPService
 
-            const once = yield* nlp.removeExtraSpaces(text)
-            const twice = yield* nlp.removeExtraSpaces(once)
+              const once = yield* nlp.removeExtraSpaces(text)
+              const twice = yield* nlp.removeExtraSpaces(once)
 
-            return once === twice
+              return once === twice
+            })
+
+            return await Effect.runPromise(
+              program.pipe(Effect.provide(NLP.NLPServiceLive))
+            )
           })
-
-          return await Effect.runPromise(
-            program.pipe(Effect.provide(NLP.NLPServiceLive))
-          )
-        })
+        )
       )
   )
 
   it.layer(NLP.NLPServiceLive)(
     "should be idempotent: stem(stem(tokens)) = stem(tokens)",
     () =>
-      fc.assert(
-        fc.asyncProperty(
-          fc.array(fc.string({ minLength: 1, maxLength: 20 }), {
-            minLength: 1,
-            maxLength: 50
-          }),
-          async (tokens) => {
-            const program = Effect.gen(function*() {
-              const nlp = yield* NLP.NLPService
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(
+            fc.array(fc.string({ minLength: 1, maxLength: 20 }), {
+              minLength: 1,
+              maxLength: 50
+            }),
+            async (tokens) => {
+              const program = Effect.gen(function*() {
+                const nlp = yield* NLP.NLPService
 
-              const once = yield* nlp.stem(tokens)
-              const twice = yield* nlp.stem(once)
+                const once = yield* nlp.stem(tokens)
+                const twice = yield* nlp.stem(once)
 
-              return JSON.stringify(once) === JSON.stringify(twice)
-            })
+                return JSON.stringify(once) === JSON.stringify(twice)
+              })
 
-            return await Effect.runPromise(
-              program.pipe(Effect.provide(NLP.NLPServiceLive))
-            )
-          }
+              return await Effect.runPromise(
+                program.pipe(Effect.provide(NLP.NLPServiceLive))
+              )
+            }
+          )
         )
       )
   )
   it.layer(NLP.NLPServiceLive)(
     "should be idempotent: removeStopWords twice = removeStopWords once",
     () =>
-      fc.assert(
-        fc.asyncProperty(
-          fc.array(fc.string({ minLength: 1, maxLength: 20 }), {
-            minLength: 1,
-            maxLength: 50
-          }),
-          async (tokens) => {
-            const program = Effect.gen(function*() {
-              const nlp = yield* NLP.NLPService
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(
+            fc.array(fc.string({ minLength: 1, maxLength: 20 }), {
+              minLength: 1,
+              maxLength: 50
+            }),
+            async (tokens) => {
+              const program = Effect.gen(function*() {
+                const nlp = yield* NLP.NLPService
 
-              const once = yield* nlp.removeStopWords(tokens)
-              const twice = yield* nlp.removeStopWords(once)
+                const once = yield* nlp.removeStopWords(tokens)
+                const twice = yield* nlp.removeStopWords(once)
 
-              return JSON.stringify(once) === JSON.stringify(twice)
-            })
+                return JSON.stringify(once) === JSON.stringify(twice)
+              })
 
-            return await Effect.runPromise(
-              program.pipe(Effect.provide(NLP.NLPServiceLive))
-            )
-          }
+              return await Effect.runPromise(
+                program.pipe(Effect.provide(NLP.NLPServiceLive))
+              )
+            }
+          )
         )
       )
   )
 
-  // =============================================================================
-  // Monotonicity Laws
-  // =============================================================================
+})
 
-  describe("Monotonicity Laws", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should be monotonic: |removeStopWords(tokens)| ≤ |tokens|",
-      () =>
+// =============================================================================
+// Monotonicity Laws
+// =============================================================================
+
+describe("Monotonicity Laws", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should be monotonic: |removeStopWords(tokens)| ≤ |tokens|",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.array(fc.string({ minLength: 1, maxLength: 20 }), {
@@ -171,10 +184,12 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
-    it.layer(NLP.NLPServiceLive)(
-      "should be monotonic: |remove(text)| ≤ |text|",
-      () =>
+      )
+  )
+  it.layer(NLP.NLPServiceLive)(
+    "should be monotonic: |remove(text)| ≤ |text|",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(fc.string(), async (text) => {
             const program = Effect.gen(function*() {
@@ -190,17 +205,19 @@ describe("Idempotence Laws", () => {
             )
           })
         )
-    )
-  })
+      )
+  )
+})
 
-  // =============================================================================
-  // Preservation Laws
-  // =============================================================================
+// =============================================================================
+// Preservation Laws
+// =============================================================================
 
-  describe("Preservation Laws", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should preserve word count: wordCount(text) ≈ |tokenize(text)|",
-      () =>
+describe("Preservation Laws", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should preserve word count: wordCount(text) ≈ |tokenize(text)|",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.string({ minLength: 10, maxLength: 200 }),
@@ -223,10 +240,12 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
-    it.layer(NLP.NLPServiceLive)(
-      "should preserve token count: sum(bow.values) = tokens.length",
-      () =>
+      )
+  )
+  it.layer(NLP.NLPServiceLive)(
+    "should preserve token count: sum(bow.values) = tokens.length",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.array(fc.string({ minLength: 1, maxLength: 20 }), {
@@ -253,11 +272,13 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
+      )
+  )
 
-    it.layer(NLP.NLPServiceLive)(
-      "should preserve vocabulary: bow.keys ⊆ tokens",
-      () =>
+  it.layer(NLP.NLPServiceLive)(
+    "should preserve vocabulary: bow.keys ⊆ tokens",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.array(fc.string({ minLength: 1, maxLength: 20 }), {
@@ -287,17 +308,19 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
-  })
+      )
+  )
+})
 
-  // =============================================================================
-  // Metric Space Laws (for similarity measures)
-  // =============================================================================
+// =============================================================================
+// Metric Space Laws (for similarity measures)
+// =============================================================================
 
-  describe("Metric Space Laws for String Similarity", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should be reflexive: similarity(x, x) = 1",
-      () =>
+describe("Metric Space Laws for String Similarity", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should be reflexive: similarity(x, x) = 1",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.string({ minLength: 1, maxLength: 100 }),
@@ -316,11 +339,13 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
+      )
+  )
 
-    it.layer(NLP.NLPServiceLive)(
-      "should be symmetric: similarity(x, y) = similarity(y, x)",
-      () =>
+  it.layer(NLP.NLPServiceLive)(
+    "should be symmetric: similarity(x, y) = similarity(y, x)",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.string({ minLength: 1, maxLength: 50 }),
@@ -341,32 +366,39 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
+      )
+  )
 
-    it.layer(NLP.NLPServiceLive)("should be bounded: 0 ≤ similarity ≤ 1", () =>
-      fc.assert(
-        fc.asyncProperty(
-          fc.string({ minLength: 1, maxLength: 50 }),
-          fc.string({ minLength: 1, maxLength: 50 }),
-          async (s1, s2) => {
-            const program = Effect.gen(function*() {
-              const nlp = yield* NLP.NLPService
+  it.layer(NLP.NLPServiceLive)(
+    "should be bounded: 0 ≤ similarity ≤ 1",
+    () =>
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(
+            fc.string({ minLength: 1, maxLength: 50 }),
+            fc.string({ minLength: 1, maxLength: 50 }),
+            async (s1, s2) => {
+              const program = Effect.gen(function*() {
+                const nlp = yield* NLP.NLPService
 
-              const sim = yield* nlp.stringSimilarity(s1, s2)
+                const sim = yield* nlp.stringSimilarity(s1, s2)
 
-              return sim >= 0 && sim <= 1
-            })
+                return sim >= 0 && sim <= 1
+              })
 
-            return await Effect.runPromise(
-              program.pipe(Effect.provide(NLP.NLPServiceLive))
-            )
-          }
+              return await Effect.runPromise(
+                program.pipe(Effect.provide(NLP.NLPServiceLive))
+              )
+            }
+          )
         )
-      ))
+      )
+  )
 
-    it.layer(NLP.NLPServiceLive)(
-      "should satisfy: identical strings have similarity 1",
-      () =>
+  it.layer(NLP.NLPServiceLive)(
+    "should satisfy: identical strings have similarity 1",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.string({ minLength: 1, maxLength: 100 }),
@@ -385,17 +417,19 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
-  })
+      )
+  )
+})
 
-  // =============================================================================
-  // Composition Laws
-  // =============================================================================
+// =============================================================================
+// Composition Laws
+// =============================================================================
 
-  describe("Composition Laws", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should commute: tokenize(normalize(x)) produces same vocab as normalize(tokenize(x))",
-      () =>
+describe("Composition Laws", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should commute: tokenize(normalize(x)) produces same vocab as normalize(tokenize(x))",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.string({ minLength: 10, maxLength: 100 }),
@@ -435,10 +469,12 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
-    it.layer(NLP.NLPServiceLive)(
-      "should preserve or increase token count",
-      () =>
+      )
+  )
+  it.layer(NLP.NLPServiceLive)(
+    "should preserve or increase token count",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.string({ minLength: 10, maxLength: 100 }),
@@ -466,73 +502,75 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
-    it.skip(
-      "should be order-independent with removeStopWords >> stem",
-      () =>
-        fc.assert(
-          fc.asyncProperty(
-            fc.array(fc.string({ minLength: 2, maxLength: 20 }), {
-              minLength: 1,
-              maxLength: 30
-            }),
-            async (tokens) => {
-              const program = Effect.gen(function*() {
-                const nlp = yield* NLP.NLPService
-
-                // Path 1: stem then remove stop words
-                const stemmed1 = yield* nlp.stem(tokens)
-                const path1 = yield* nlp.removeStopWords(stemmed1)
-
-                // Path 2: remove stop words then stem
-                const filtered2 = yield* nlp.removeStopWords(tokens)
-                const path2 = yield* nlp.stem(filtered2)
-
-                // Convert to arrays and sort for comparison
-                const path1Array = [...path1].sort()
-                const path2Array = [...path2].sort()
-
-                // These operations should be order-independent
-                // The implementation checks both the original token and its stemmed form
-                // to ensure consistent behavior regardless of operation order
-                return JSON.stringify(path1Array) === JSON.stringify(path2Array)
-              })
-
-              return await Effect.runPromise(
-                program.pipe(Effect.provide(NLP.NLPServiceLive))
-              )
-            }
-          ),
-          { numRuns: 100 }
-        )
-    )
-  })
-
-  it.layer(NLP.NLPServiceLive)(
-    "should satisfy: |ngrams(text, n)| = max(0, |tokens| - n + 1)",
+      )
+  )
+  it.skip(
+    "should be order-independent with removeStopWords >> stem",
     () =>
       fc.assert(
         fc.asyncProperty(
-          fc.string({ minLength: 10, maxLength: 100 }),
-          fc.nat({ max: 5 }).map((n) => n + 1), // n >= 1
-          async (text, n) => {
-            if (text.trim() === "") return true
-
+          fc.array(fc.string({ minLength: 2, maxLength: 20 }), {
+            minLength: 1,
+            maxLength: 30
+          }),
+          async (tokens) => {
             const program = Effect.gen(function*() {
               const nlp = yield* NLP.NLPService
 
-              const tokens = yield* nlp.tokenize(text)
-              const ngrams = yield* nlp.ngrams(text, n)
+              // Path 1: stem then remove stop words
+              const stemmed1 = yield* nlp.stem(tokens)
+              const path1 = yield* nlp.removeStopWords(stemmed1)
 
-              const expectedCount = Math.max(0, tokens.length - n + 1)
+              // Path 2: remove stop words then stem
+              const filtered2 = yield* nlp.removeStopWords(tokens)
+              const path2 = yield* nlp.stem(filtered2)
 
-              return ngrams.length === expectedCount
+              // Convert to arrays and sort for comparison
+              const path1Array = [...path1].sort()
+              const path2Array = [...path2].sort()
+
+              // These operations should be order-independent
+              // The implementation checks both the original token and its stemmed form
+              // to ensure consistent behavior regardless of operation order
+              return JSON.stringify(path1Array) === JSON.stringify(path2Array)
             })
 
             return await Effect.runPromise(
               program.pipe(Effect.provide(NLP.NLPServiceLive))
             )
           }
+        ),
+        { numRuns: 100 }
+      )
+  )
+
+  it.layer(NLP.NLPServiceLive)(
+    "should satisfy: |ngrams(text, n)| = max(0, |tokens| - n + 1)",
+    () =>
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(
+            fc.string({ minLength: 10, maxLength: 100 }),
+            fc.nat({ max: 5 }).map((n) => n + 1), // n >= 1
+            async (text, n) => {
+              if (text.trim() === "") return true
+
+              const program = Effect.gen(function*() {
+                const nlp = yield* NLP.NLPService
+
+                const tokens = yield* nlp.tokenize(text)
+                const ngrams = yield* nlp.ngrams(text, n)
+
+                const expectedCount = Math.max(0, tokens.length - n + 1)
+
+                return ngrams.length === expectedCount
+              })
+
+              return await Effect.runPromise(
+                program.pipe(Effect.provide(NLP.NLPServiceLive))
+              )
+            }
+          )
         )
       )
   )
@@ -540,33 +578,37 @@ describe("Idempotence Laws", () => {
   it.layer(NLP.NLPServiceLive)(
     "should produce unigrams equal to tokens when n=1",
     () =>
-      fc.assert(
-        fc.asyncProperty(
-          fc.string({ minLength: 10, maxLength: 100 }),
-          async (text) => {
-            if (text.trim() === "") return true
+      Effect.promise(() =>
+        fc.assert(
+          fc.asyncProperty(
+            fc.string({ minLength: 10, maxLength: 100 }),
+            async (text) => {
+              if (text.trim() === "") return true
 
-            const program = Effect.gen(function*() {
-              const nlp = yield* NLP.NLPService
+              const program = Effect.gen(function*() {
+                const nlp = yield* NLP.NLPService
 
-              const tokens = yield* nlp.tokenize(text)
-              const unigrams = yield* nlp.ngrams(text, 1)
+                const tokens = yield* nlp.tokenize(text)
+                const unigrams = yield* nlp.ngrams(text, 1)
 
-              return JSON.stringify(tokens) === JSON.stringify(unigrams)
-            })
+                return JSON.stringify(tokens) === JSON.stringify(unigrams)
+              })
 
-            return await Effect.runPromise(
-              program.pipe(Effect.provide(NLP.NLPServiceLive))
-            )
-          }
+              return await Effect.runPromise(
+                program.pipe(Effect.provide(NLP.NLPServiceLive))
+              )
+            }
+          )
         )
       )
   )
+})
 
-  describe("Sentence boundary preservation", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should preserve content: joining sentences approximates original text",
-      () =>
+describe("Sentence boundary preservation", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should preserve content: joining sentences approximates original text",
+    () =>
+      Effect.promise(() =>
         fc.assert(
           fc.asyncProperty(
             fc.array(alphaSentence, { minLength: 1, maxLength: 5 }),
@@ -588,6 +630,6 @@ describe("Idempotence Laws", () => {
             }
           )
         )
-    )
-  })
+      )
+  )
 })
