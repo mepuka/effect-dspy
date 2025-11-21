@@ -322,3 +322,276 @@ export const depth = <A>(graph: EffectGraph<A>): number => {
   const nodes = EG.toArray(graph)
   return nodes.reduce((max: number, node: GraphNode<A>) => Math.max(max, node.metadata.depth), 0)
 }
+
+// =============================================================================
+// Functor Instance for TextOperation
+// =============================================================================
+
+/**
+ * Functor instance for TextOperation
+ *
+ * A Functor provides a `map` operation that transforms the output type
+ * while preserving the structure.
+ *
+ * Laws:
+ * 1. Identity: map(id) = id
+ * 2. Composition: map(f ∘ g) = map(f) ∘ map(g)
+ *
+ * Category theory: TextOperation forms a functor from the category of types
+ * to the Kleisli category of Effect.
+ */
+export interface Functor<F> {
+  readonly map: <A, B>(fa: F, f: (a: A) => B) => F
+}
+
+/**
+ * Map over the output of a TextOperation
+ *
+ * This transforms the data in the output nodes without changing the
+ * graph structure or effects.
+ *
+ * Example:
+ *   tokenizeOperation :: TextOperation<string, string>
+ *   uppercaseOperation = map(tokenizeOperation, s => s.toUpperCase())
+ *   // uppercaseOperation :: TextOperation<string, string>
+ */
+export const map = <A, B, C, R, E>(
+  operation: TextOperation<A, B, R, E>,
+  f: (b: B) => C
+): TextOperation<A, C, R, E> =>
+  makeOperation(`${operation.name} |> map`, (node) =>
+    Effect.map(operation.apply(node), (nodes) =>
+      nodes.map((n) => ({
+        ...n,
+        data: f(n.data)
+      }))
+    ))
+
+/**
+ * Map over TextOperation using Effect
+ *
+ * Allows mapping with effectful functions.
+ *
+ * Example:
+ *   flatMap(tokenizeOperation, token => Effect.succeed(token.toUpperCase()))
+ */
+export const flatMap = <A, B, C, R1, E1, R2, E2>(
+  operation: TextOperation<A, B, R1, E1>,
+  f: (b: B) => Effect.Effect<C, E2, R2>
+): TextOperation<A, C, R1 | R2, E1 | E2> =>
+  makeOperation(`${operation.name} |> flatMap`, (node) =>
+    Effect.flatMap(operation.apply(node), (nodes) =>
+      Effect.all(
+        nodes.map((n) =>
+          Effect.map(f(n.data), (newData) => ({
+            ...n,
+            data: newData
+          }))
+        )
+      )
+    ))
+
+// =============================================================================
+// Applicative Instance for TextOperation
+// =============================================================================
+
+/**
+ * Apply a TextOperation that produces functions to a TextOperation that produces values
+ *
+ * This enables parallel composition of operations.
+ *
+ * Category theory: TextOperation forms an applicative functor, allowing
+ * independent effects to be composed.
+ */
+export const ap = <A, B, C, R1, E1, R2, E2>(
+  opFn: TextOperation<A, (b: B) => C, R1, E1>,
+  opVal: TextOperation<A, B, R2, E2>
+): TextOperation<A, C, R1 | R2, E1 | E2> =>
+  makeOperation(`ap(${opFn.name}, ${opVal.name})`, (node) =>
+    Effect.gen(function*() {
+      const fnNodes = yield* opFn.apply(node)
+      const valNodes = yield* opVal.apply(node)
+
+      // Apply each function to each value (Cartesian product)
+      const results: Array<GraphNode<C>> = []
+
+      for (const fnNode of fnNodes) {
+        for (const valNode of valNodes) {
+          results.push({
+            ...valNode,
+            data: fnNode.data(valNode.data)
+          })
+        }
+      }
+
+      return results
+    }))
+
+/**
+ * Lift a pure value into a TextOperation
+ *
+ * Creates an operation that always produces the given value.
+ */
+export const pure = <A, B>(value: B): TextOperation<A, B, never, never> =>
+  makeOperation("pure", (node) =>
+    Effect.succeed([
+      EG.makeNode(value, Option.some(node.id), Option.some("pure"))
+    ]))
+
+// =============================================================================
+// Monad Instance for TextOperation
+// =============================================================================
+
+/**
+ * Monad instance for TextOperation
+ *
+ * A Monad extends Functor and Applicative with `flatMap` (bind),
+ * allowing sequencing of dependent operations.
+ *
+ * Laws:
+ * 1. Left identity: flatMap(pure(a), f) = f(a)
+ * 2. Right identity: flatMap(m, pure) = m
+ * 3. Associativity: flatMap(flatMap(m, f), g) = flatMap(m, x => flatMap(f(x), g))
+ *
+ * Category theory: TextOperation is a monad in the category of Effect types.
+ */
+export const chain = <A, B, C, R1, E1, R2, E2>(
+  operation: TextOperation<A, B, R1, E1>,
+  f: (b: B) => TextOperation<B, C, R2, E2>
+): TextOperation<A, C, R1 | R2, E1 | E2> =>
+  makeOperation(`${operation.name} >>= chain`, (node) =>
+    Effect.gen(function*() {
+      // Apply first operation
+      const intermediateNodes = yield* operation.apply(node)
+
+      // Apply second operation to each intermediate node
+      const results: Array<GraphNode<C>> = []
+
+      for (const intermediate of intermediateNodes) {
+        const secondOp = f(intermediate.data)
+        const outputNodes = yield* secondOp.apply(intermediate)
+        results.push(...outputNodes)
+      }
+
+      return results
+    }))
+
+/**
+ * Flatten nested TextOperations
+ *
+ * Note: This is a simplified version that works when you have nested operations.
+ * For full monad behavior, use chain directly.
+ */
+export const flatten = <A, B, C, R1, E1, R2, E2>(
+  operation: TextOperation<A, B, R1, E1>,
+  getInnerOp: (b: B) => TextOperation<B, C, R2, E2>
+): TextOperation<A, C, R1 | R2, E1 | E2> =>
+  chain(operation, getInnerOp)
+
+// =============================================================================
+// Alternative Instance (for combining operations)
+// =============================================================================
+
+/**
+ * Combine two TextOperations, producing results from both
+ *
+ * This is useful for parallel branching: apply both operations
+ * and collect all results.
+ *
+ * Example:
+ *   alt(tokenizeOperation, ngramOperation(2))
+ *   // Produces both tokens and bigrams
+ */
+export const alt = <A, B, R1, E1, R2, E2>(
+  op1: TextOperation<A, B, R1, E1>,
+  op2: TextOperation<A, B, R2, E2>
+): TextOperation<A, B, R1 | R2, E1 | E2> =>
+  makeOperation(`alt(${op1.name}, ${op2.name})`, (node) =>
+    Effect.gen(function*() {
+      const results1 = yield* op1.apply(node)
+      const results2 = yield* op2.apply(node)
+
+      return [...results1, ...results2]
+    }))
+
+/**
+ * Empty operation (produces no nodes)
+ *
+ * This is the identity for `alt`.
+ */
+export const empty = <A, B>(): TextOperation<A, B, never, never> =>
+  makeOperation("empty", () => Effect.succeed([]))
+
+// =============================================================================
+// Traversable Instance
+// =============================================================================
+
+/**
+ * Traverse a TextOperation with an effectful function
+ *
+ * This allows you to apply an effect to each output node.
+ *
+ * Category theory: This witnesses that TextOperation is a traversable functor.
+ */
+export const traverse = <A, B, C, R1, E1, R2, E2>(
+  operation: TextOperation<A, B, R1, E1>,
+  f: (b: B) => Effect.Effect<C, E2, R2>
+): TextOperation<A, C, R1 | R2, E1 | E2> =>
+  makeOperation(`${operation.name} |> traverse`, (node) =>
+    Effect.flatMap(operation.apply(node), (nodes) =>
+      Effect.all(
+        nodes.map((n) =>
+          Effect.map(f(n.data), (newData) => ({
+            ...n,
+            data: newData
+          }))
+        )
+      )
+    ))
+
+// =============================================================================
+// Utility Combinators
+// =============================================================================
+
+/**
+ * Replicate an operation n times and collect results
+ *
+ * Example:
+ *   replicate(tokenizeOperation, 3)
+ *   // Apply tokenization 3 times and collect all tokens
+ */
+export const replicate = <A, B, R, E>(
+  operation: TextOperation<A, B, R, E>,
+  n: number
+): TextOperation<A, B, R, E> =>
+  makeOperation(`replicate(${operation.name}, ${n})`, (node) =>
+    Effect.gen(function*() {
+      const results: Array<GraphNode<B>> = []
+
+      for (let i = 0; i < n; i++) {
+        const nodes = yield* operation.apply(node)
+        results.push(...nodes)
+      }
+
+      return results
+    }))
+
+/**
+ * Apply operation only if predicate holds
+ *
+ * Otherwise, return empty.
+ */
+export const when = <A, B, R, E>(
+  predicate: (a: A) => boolean,
+  operation: TextOperation<A, B, R, E>
+): TextOperation<A, B, R, E> =>
+  makeOperation(`when(${operation.name})`, (node) =>
+    predicate(node.data) ? operation.apply(node) : Effect.succeed([]))
+
+/**
+ * Apply operation unless predicate holds
+ */
+export const unless = <A, B, R, E>(
+  predicate: (a: A) => boolean,
+  operation: TextOperation<A, B, R, E>
+): TextOperation<A, B, R, E> => when((a) => !predicate(a), operation)
