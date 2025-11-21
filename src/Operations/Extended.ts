@@ -18,12 +18,11 @@
 
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
+import * as M from "../Algebra/Monoid.js"
 import * as EG from "../EffectGraph.js"
 import { NLPService } from "../NLPService.js"
 import type { ForgetfulOperation, FreeOperation } from "../TypeClass.js"
 import * as TC from "../TypeClass.js"
-import * as M from "../Algebra/Monoid.js"
-import * as Kind from "../Ontology/Kind.js"
 
 // =============================================================================
 // Paragraphization Adjunction
@@ -369,9 +368,15 @@ export const wordExtractionAdjunction = TC.makeAdjunction(
  *
  * Example: Document → Paragraphs → Sentences → Tokens
  */
-export const createMultiLevelPipeline = <A, B, C, D>(
-  adj1: ReturnType<typeof TC.makeAdjunction>,
-  adj2: ReturnType<typeof TC.makeAdjunction>
+export const createMultiLevelPipeline = <A, B, C, R1, E1, R2, E2>(
+  adj1: {
+    readonly expand: FreeOperation<A, B, R1, E1>
+    readonly aggregate: ForgetfulOperation<B, A, R1, E1>
+  },
+  adj2: {
+    readonly expand: FreeOperation<B, C, R2, E2>
+    readonly aggregate: ForgetfulOperation<C, B, R2, E2>
+  }
 ) => ({
   expand1: adj1.expand,
   expand2: adj2.expand,
