@@ -12,42 +12,6 @@ import * as GraphOps from "../src/GraphOps.js"
 import * as S from "../src/Schema.js"
 
 describe("Bug Fixes from Code Review", () => {
-  // ==========================================================================
-  // Fix 1: Jaro Similarity Inversion
-  // ==========================================================================
-
-  describe("Jaro similarity (no longer inverted)", () => {
-    it.layer(NLP.NLPServiceLive)(
-      "should return 1.0 for identical strings",
-      () =>
-        Effect.gen(function*() {
-          const nlp = yield* NLP.NLPService
-          const similarity = yield* nlp.stringSimilarity("hello", "hello")
-          expect(similarity).toBe(1.0)
-        })
-    )
-
-    it.layer(NLP.NLPServiceLive)(
-      "should return ~0 for completely different strings",
-      () =>
-        Effect.gen(function*() {
-          const nlp = yield* NLP.NLPService
-          const similarity = yield* nlp.stringSimilarity("abc", "xyz")
-          expect(similarity).toBeLessThan(0.5) // Should be low for dissimilar strings
-        })
-    )
-
-    it.layer(NLP.NLPServiceLive)(
-      "should return value in [0, 1] range",
-      () =>
-        Effect.gen(function*() {
-          const nlp = yield* NLP.NLPService
-          const similarity = yield* nlp.stringSimilarity("test", "text")
-          expect(similarity).toBeGreaterThanOrEqual(0)
-          expect(similarity).toBeLessThanOrEqual(1)
-        })
-    )
-  })
 
   // ==========================================================================
   // Fix 2: Depth Computation (BFS, handles DAGs correctly)
@@ -92,12 +56,51 @@ describe("Bug Fixes from Code Review", () => {
     })
   })
 
-  // ==========================================================================
-  // Fix 3: tokenizeNodes Idempotency
-  // ==========================================================================
+})
 
-  describe("tokenizeNodes idempotency", () => {
-    it.layer(NLP.NLPServiceLive)(
+// =============================================================================
+// Jaro Similarity Tests
+// =============================================================================
+
+describe("Jaro similarity (no longer inverted)", () => {
+  it.layer(NLP.NLPServiceLive)(
+    "should return 1.0 for identical strings",
+    () =>
+      Effect.gen(function*() {
+        const nlp = yield* NLP.NLPService
+        const similarity = yield* nlp.stringSimilarity("hello", "hello")
+        expect(similarity).toBe(1.0)
+      })
+  )
+
+  it.layer(NLP.NLPServiceLive)(
+    "should return ~0 for completely different strings",
+    () =>
+      Effect.gen(function*() {
+        const nlp = yield* NLP.NLPService
+        const similarity = yield* nlp.stringSimilarity("abc", "xyz")
+        expect(similarity).toBeLessThan(0.5) // Should be low for dissimilar strings
+      })
+  )
+
+  it.layer(NLP.NLPServiceLive)(
+    "should return value in [0, 1] range",
+    () =>
+      Effect.gen(function*() {
+        const nlp = yield* NLP.NLPService
+        const similarity = yield* nlp.stringSimilarity("test", "text")
+        expect(similarity).toBeGreaterThanOrEqual(0)
+        expect(similarity).toBeLessThanOrEqual(1)
+      })
+  )
+})
+
+// =============================================================================
+// tokenizeNodes Idempotency Tests
+// =============================================================================
+
+describe("tokenizeNodes idempotency", () => {
+  it.layer(NLP.NLPServiceLive)(
       "should not create duplicate tokens on second call",
       () =>
         Effect.gen(function*() {
@@ -137,13 +140,13 @@ describe("Bug Fixes from Code Review", () => {
           expect(tokens2.length).toBe(tokens1.length)
         })
     )
-  })
+})
 
-  // ==========================================================================
-  // Fix 4: Acyclicity Validation in addChildren
-  // ==========================================================================
+// =============================================================================
+// addChildren Acyclicity Validation Tests
+// =============================================================================
 
-  describe("addChildren acyclicity validation", () => {
+describe("addChildren acyclicity validation", () => {
     it("should validate acyclicity", () => {
       // Note: In a DAG, adding new children typically doesn't create cycles
       // unless we manually construct edges back to ancestors.
@@ -191,14 +194,14 @@ describe("Bug Fixes from Code Review", () => {
       expect(TextGraph.nodeCount(result)).toBe(2)
       expect(TextGraph.isAcyclic(result)).toBe(true)
     })
-  })
+})
 
-  // ==========================================================================
-  // Fix 5: Duplicate Tokenization in parallelFeaturePipeline
-  // ==========================================================================
+// =============================================================================
+// parallelFeaturePipeline Tests
+// =============================================================================
 
-  describe("parallelFeaturePipeline (no duplicate tokenization)", () => {
-    it.layer(NLP.NLPServiceLive)(
+describe("parallelFeaturePipeline (no duplicate tokenization)", () => {
+  it.layer(NLP.NLPServiceLive)(
       "should tokenize only once and reuse results",
       () =>
         Effect.gen(function*() {
@@ -220,7 +223,6 @@ describe("Bug Fixes from Code Review", () => {
           })
         })
     )
-  })
 })
 
 // =============================================================================
