@@ -11,9 +11,9 @@ import * as Layer from "effect/Layer"
 import model from "wink-eng-lite-web-model"
 import winkNLP from "wink-nlp"
 // @ts-ignore - wink-nlp-utils doesn't have type definitions
-import * as nlpUtils from "wink-nlp-utils"
-// @ts-ignore - wink-distance doesn't have type definitions
-import distance from "wink-distance"
+import nlpUtilsModule from "wink-nlp-utils"
+
+const nlpUtils = nlpUtilsModule.default || nlpUtilsModule
 
 // =============================================================================
 // Service Definition
@@ -167,9 +167,67 @@ export const NLPService = Context.GenericTag<NLPService>("NLPService")
 // Implementation using Wink NLP
 // =============================================================================
 
+// cache wink instance to avoid repeatedly loading large model during property tests
+let cachedNlp: WinkNLPInstance | null = null
+
+const getNlpInstance = (): WinkNLPInstance => {
+  if (cachedNlp) return cachedNlp
+  cachedNlp = winkNLP(model) as WinkNLPInstance
+  return cachedNlp
+}
+
+const jaroWinklerSimilarity = (s1: string, s2: string): number => {
+  if (s1 === s2) return 1
+  const len1 = s1.length
+  const len2 = s2.length
+  if (len1 === 0 || len2 === 0) return 0
+
+  const matchDistance = Math.floor(Math.max(len1, len2) / 2) - 1
+  const s1Matches = new Array<boolean>(len1).fill(false)
+  const s2Matches = new Array<boolean>(len2).fill(false)
+
+  let matches = 0
+  for (let i = 0; i < len1; i++) {
+    const start = Math.max(0, i - matchDistance)
+    const end = Math.min(i + matchDistance + 1, len2)
+    for (let j = start; j < end; j++) {
+      if (s2Matches[j]) continue
+      if (s1[i] !== s2[j]) continue
+      s1Matches[i] = true
+      s2Matches[j] = true
+      matches++
+      break
+    }
+  }
+
+  if (matches === 0) return 0
+
+  let transpositions = 0
+  let k = 0
+  for (let i = 0; i < len1; i++) {
+    if (!s1Matches[i]) continue
+    while (!s2Matches[k]) k++
+    if (s1[i] !== s2[k]) transpositions++
+    k++
+  }
+
+  const m = matches
+  const jaro = (m / len1 + m / len2 + (m - transpositions / 2) / m) /
+    3
+
+  let prefix = 0
+  const maxPrefix = 4
+  while (prefix < maxPrefix && s1[prefix] === s2[prefix]) {
+    prefix++
+  }
+
+  const p = 0.1
+  return jaro + prefix * p * (1 - jaro)
+}
+
 const makeNLPService = Effect.sync(() => {
   // Initialize Wink NLP with the language model
-  const nlp = winkNLP(model) as WinkNLPInstance
+  const nlp = getNlpInstance()
 
   const sentencizeImpl = (text: string): ReadonlyArray<string> => {
     if (text.trim() === "") return []
@@ -251,12 +309,51 @@ const makeNLPService = Effect.sync(() => {
 
   const removeExtraSpacesImpl = (text: string): string => (nlpUtils.string as any).removeExtraSpaces(text)
 
+  // Stem until fixed point to ensure idempotence
+  const stemUntilFixedPoint = (token: string): string => {
+    let current = token.trim().toLowerCase()
+    if (current.length === 0) return ""
+
+    let stemmed = (nlpUtils.string as any).stem(current)
+    while (stemmed !== current) {
+      current = stemmed
+      stemmed = (nlpUtils.string as any).stem(current)
+    }
+    return stemmed
+  }
+
   const stemImpl = (tokens: ReadonlyArray<string>): ReadonlyArray<string> =>
-    tokens.map((token) => (nlpUtils.string as any).stem(token))
+    tokens
+      .map(stemUntilFixedPoint)
+      .filter((token) => token.length > 0)
 
   const removeStopWordsImpl = (
     tokens: ReadonlyArray<string>
-  ): ReadonlyArray<string> => (nlpUtils.tokens as any).removeWords(tokens as any) as ReadonlyArray<string>
+  ): ReadonlyArray<string> => {
+    // First, use wink's removeWords to filter out stop words
+    const filtered = (nlpUtils.tokens as any).removeWords(tokens as any) as ReadonlyArray<string>
+
+    // For order-independence, also check if any remaining tokens stem to stop words
+    // This ensures that if a token would stem to a stop word, it's removed
+    // regardless of whether stemming happens before or after stop word removal
+    return filtered.filter((token) => {
+      const normalized = token.trim().toLowerCase()
+      if (normalized.length === 0) return true // Keep empty tokens, they'll be filtered by stem
+
+      // Check if the stemmed form is a stop word
+      const stemmed = stemUntilFixedPoint(token)
+      const stemmedNormalized = stemmed.trim()
+      if (stemmedNormalized.length > 0) {
+        const stemmedFiltered = (nlpUtils.tokens as any).removeWords([stemmedNormalized] as any)
+        if (stemmedFiltered.length === 0) {
+          // The stemmed form is a stop word, so remove it
+          return false
+        }
+      }
+
+      return true
+    })
+  }
 
   const bagOfWordsImpl = (
     tokens: ReadonlyArray<string>
@@ -266,12 +363,7 @@ const makeNLPService = Effect.sync(() => {
     return new Map(Object.entries(bow))
   }
 
-  const stringSimilarityImpl = (s1: string, s2: string): number => {
-    // wink-distance.string.jaro returns similarity in [0, 1]
-    // where 1 = identical, 0 = completely different
-    // No inversion needed - use the value directly
-    return distance.string.jaro(s1, s2)
-  }
+  const stringSimilarityImpl = (s1: string, s2: string): number => (s1 === s2 ? 1 : jaroWinklerSimilarity(s1, s2))
 
   return {
     sentencize: (text: string) => Effect.sync(() => sentencizeImpl(text)),

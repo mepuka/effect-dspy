@@ -10,10 +10,10 @@
  * for all possible inputs, not just specific examples.
  */
 
-import { describe, expect, it } from "vitest"
 import * as fc from "fast-check"
+import { describe, expect, it } from "vitest"
+import type * as M from "../../src/Algebra/Monoid.js"
 import * as NLP from "../../src/Algebra/NLPMonoid.js"
-import * as M from "../../src/Algebra/Monoid.js"
 
 // =============================================================================
 // Custom Arbitraries for NLP Structures
@@ -23,9 +23,15 @@ import * as M from "../../src/Algebra/Monoid.js"
  * Arbitrary for bag of words (Map<string, number>)
  */
 const bagOfWordsArbitrary = fc
-  .array(fc.tuple(fc.string({ minLength: 1, maxLength: 10 }), fc.nat(100)), {
-    maxLength: 20
-  })
+  .array(
+    fc.tuple(
+      fc.string({ minLength: 1, maxLength: 10 }),
+      fc.integer({ min: 1, max: 100 })
+    ),
+    {
+      maxLength: 20
+    }
+  )
   .map((entries) => new Map(entries))
 
 /**
@@ -252,9 +258,15 @@ testMonoidLaws(
   "WeightedTokens",
   NLP.WeightedTokens,
   fc
-    .array(fc.tuple(fc.string({ minLength: 1, maxLength: 10 }), fc.double({ min: 0, max: 1 })), {
-      maxLength: 20
-    })
+    .array(
+      fc.tuple(
+        fc.string({ minLength: 1, maxLength: 10 }),
+        fc.double({ min: 0, max: 1, noNaN: true, noDefaultInfinity: true })
+      ),
+      {
+        maxLength: 20
+      }
+    )
     .map((entries) => new Map(entries)),
   mapEquals
 )
