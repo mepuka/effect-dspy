@@ -18,7 +18,7 @@
  * - Forgetful operations decrease granularity (move up the poset)
  */
 
-import * as Schema from "effect/Schema"
+import { Schema } from "effect"
 
 // =============================================================================
 // Core Kind System
@@ -46,28 +46,29 @@ export type TextKind =
   | "Token"
   | "Character"
   // Semantic extractions (orthogonal to structural hierarchy)
-  | "Entity"      // Named entities (PERSON, ORG, LOC, etc.)
-  | "Relation"    // Semantic relations (subject-verb-object, etc.)
-  | "Embedding"   // Vector representation in semantic space
-  | "Dependency"  // Syntactic dependency arc (head-relation-dependent)
-  | "Chunk"       // Shallow parsing chunks (NP, VP, etc.)
-  | "POS"         // Part-of-speech tagged token
+  | "Entity" // Named entities (PERSON, ORG, LOC, etc.)
+  | "Relation" // Semantic relations (subject-verb-object, etc.)
+  | "Embedding" // Vector representation in semantic space
+  | "Dependency" // Syntactic dependency arc (head-relation-dependent)
+  | "Chunk" // Shallow parsing chunks (NP, VP, etc.)
+  | "POS" // Part-of-speech tagged token
 
 /**
  * Schema for TextKind (for validation and serialization)
+ * Uses Schema.Union for better type safety and extensibility
  */
-export const TextKindSchema = Schema.Literal(
-  "Document",
-  "Paragraph",
-  "Sentence",
-  "Token",
-  "Character",
-  "Entity",
-  "Relation",
-  "Embedding",
-  "Dependency",
-  "Chunk",
-  "POS"
+export const TextKindSchema = Schema.Union(
+  Schema.Literal("Document"),
+  Schema.Literal("Paragraph"),
+  Schema.Literal("Sentence"),
+  Schema.Literal("Token"),
+  Schema.Literal("Character"),
+  Schema.Literal("Entity"),
+  Schema.Literal("Relation"),
+  Schema.Literal("Embedding"),
+  Schema.Literal("Dependency"),
+  Schema.Literal("Chunk"),
+  Schema.Literal("POS")
 )
 
 // =============================================================================
@@ -119,7 +120,7 @@ export const Document = (
 ): TypedText<"Document"> => ({
   kind: "Document",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -132,7 +133,7 @@ export const Paragraph = (
 ): TypedText<"Paragraph"> => ({
   kind: "Paragraph",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -145,7 +146,7 @@ export const Sentence = (
 ): TypedText<"Sentence"> => ({
   kind: "Sentence",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -158,7 +159,7 @@ export const Token = (
 ): TypedText<"Token"> => ({
   kind: "Token",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -171,7 +172,7 @@ export const Character = (
 ): TypedText<"Character"> => ({
   kind: "Character",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -187,7 +188,7 @@ export const Entity = (
 ): TypedText<"Entity"> => ({
   kind: "Entity",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -207,7 +208,7 @@ export const Relation = (
 ): TypedText<"Relation"> => ({
   kind: "Relation",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -226,7 +227,7 @@ export const Embedding = (
 ): TypedText<"Embedding"> => ({
   kind: "Embedding",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -246,7 +247,7 @@ export const Dependency = (
 ): TypedText<"Dependency"> => ({
   kind: "Dependency",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -259,7 +260,7 @@ export const Chunk = (
 ): TypedText<"Chunk"> => ({
   kind: "Chunk",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 /**
@@ -275,7 +276,7 @@ export const POS = (
 ): TypedText<"POS"> => ({
   kind: "POS",
   content,
-  metadata
+  ...(metadata !== undefined ? { metadata } : {})
 })
 
 // =============================================================================
@@ -324,7 +325,7 @@ export const canContain = <K1 extends TextKind, K2 extends TextKind>(
     POS: []
   }
 
-  return (containment[parent] as readonly TextKind[]).includes(child)
+  return (containment[parent] as ReadonlyArray<TextKind>).includes(child)
 }
 
 /**
@@ -391,7 +392,9 @@ export const withMetadata = <K extends TextKind>(
  */
 export const isKind = <K extends TextKind>(
   kind: K
-): (value: TypedText<TextKind>) => value is TypedText<K> => (value) => value.kind === kind
+): (value: TypedText<TextKind>) => value is TypedText<K> => {
+  return (value): value is TypedText<K> => value.kind === kind
+}
 
 /**
  * Unsafe cast between kinds (use with caution!)

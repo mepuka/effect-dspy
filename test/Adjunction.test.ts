@@ -19,12 +19,11 @@
  * so we verify up to normalization (whitespace, punctuation).
  */
 
-import { describe, expect, it } from "vitest"
-import * as fc from "fast-check"
-import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
-import * as NLP from "../src/NLPService.js"
+import * as fc from "fast-check"
+import { describe, expect, it } from "vitest"
 import * as EG from "../src/EffectGraph.js"
+import * as Arbitraries from "./arbitraries.js"
 
 // =============================================================================
 // Normalization Functions
@@ -100,24 +99,19 @@ describe("Sentencization Adjunction Laws", () => {
   describe("Right Triangle Identity: text → sentencize → join → sentencize ≈ sentencize", () => {
     it("should satisfy for arbitrary text (unit-counit composition)", () => {
       fc.assert(
-        fc.property(
-          fc
-            .string({ minLength: 10, maxLength: 200 })
-            .filter((s) => s.trim().length > 0),
-          (text) => {
-            // text → sentencize
-            const sentences1 = simpleSentencize(text)
+        fc.property(Arbitraries.nonEmptyText({ minLength: 10, maxLength: 200 }), (text: string) => {
+          // text → sentencize
+          const sentences1 = simpleSentencize(text)
 
-            // → join
-            const reconstructed = simpleJoin(sentences1)
+          // → join
+          const reconstructed = simpleJoin(sentences1)
 
-            // → sentencize
-            const sentences2 = simpleSentencize(reconstructed)
+          // → sentencize
+          const sentences2 = simpleSentencize(reconstructed)
 
-            // Check equality up to normalization
-            return arrayEquals(sentences1, sentences2)
-          }
-        ),
+          // Check equality up to normalization
+          return arrayEquals(sentences1, sentences2)
+        }),
         { numRuns: 100 }
       )
     })
@@ -143,22 +137,16 @@ describe("Sentencization Adjunction Laws", () => {
   describe("Left Triangle Identity: sentences → join → sentencize ≈ sentences", () => {
     it("should satisfy for arbitrary sentence arrays (counit-unit composition)", () => {
       fc.assert(
-        fc.property(
-          fc.array(
-            fc.string({ minLength: 5, maxLength: 50 }).filter((s) => s.trim().length > 0),
-            { minLength: 1, maxLength: 10 }
-          ),
-          (sentences) => {
-            // sentences → join
-            const text = simpleJoin(sentences)
+        fc.property(Arbitraries.sentenceArray({ minLength: 1, maxLength: 10 }), (sentences: ReadonlyArray<string>) => {
+          // sentences → join
+          const text = simpleJoin(sentences)
 
-            // → sentencize
-            const sentencesReconstructed = simpleSentencize(text)
+          // → sentencize
+          const sentencesReconstructed = simpleSentencize(text)
 
-            // Check equality up to normalization
-            return arrayEquals(sentences, sentencesReconstructed)
-          }
-        ),
+          // Check equality up to normalization
+          return arrayEquals(sentences, sentencesReconstructed)
+        }),
         { numRuns: 100 }
       )
     })
@@ -188,24 +176,19 @@ describe("Tokenization Adjunction Laws", () => {
   describe("Right Triangle Identity: text → tokenize → join → tokenize ≈ tokenize", () => {
     it("should satisfy for arbitrary text", () => {
       fc.assert(
-        fc.property(
-          fc
-            .string({ minLength: 5, maxLength: 100 })
-            .filter((s) => s.trim().length > 0),
-          (text) => {
-            // text → tokenize
-            const tokens1 = simpleTokenize(text)
+        fc.property(Arbitraries.shortText({ minLength: 5, maxLength: 100 }), (text: string) => {
+          // text → tokenize
+          const tokens1 = simpleTokenize(text)
 
-            // → join
-            const reconstructed = simpleTokenJoin(tokens1)
+          // → join
+          const reconstructed = simpleTokenJoin(tokens1)
 
-            // → tokenize
-            const tokens2 = simpleTokenize(reconstructed)
+          // → tokenize
+          const tokens2 = simpleTokenize(reconstructed)
 
-            // Check equality up to normalization
-            return arrayEquals(tokens1, tokens2)
-          }
-        ),
+          // Check equality up to normalization
+          return arrayEquals(tokens1, tokens2)
+        }),
         { numRuns: 100 }
       )
     })
@@ -226,24 +209,16 @@ describe("Tokenization Adjunction Laws", () => {
   describe("Left Triangle Identity: tokens → join → tokenize ≈ tokens", () => {
     it("should satisfy for arbitrary token arrays", () => {
       fc.assert(
-        fc.property(
-          fc.array(
-            fc
-              .string({ minLength: 1, maxLength: 20 })
-              .filter((s) => s.trim().length > 0 && !s.includes(" ")),
-            { minLength: 1, maxLength: 20 }
-          ),
-          (tokens) => {
-            // tokens → join
-            const text = simpleTokenJoin(tokens)
+        fc.property(Arbitraries.tokenArray({ minLength: 1, maxLength: 20 }), (tokens: ReadonlyArray<string>) => {
+          // tokens → join
+          const text = simpleTokenJoin(tokens)
 
-            // → tokenize
-            const tokensReconstructed = simpleTokenize(text)
+          // → tokenize
+          const tokensReconstructed = simpleTokenize(text)
 
-            // Check equality up to normalization
-            return arrayEquals(tokens, tokensReconstructed)
-          }
-        ),
+          // Check equality up to normalization
+          return arrayEquals(tokens, tokensReconstructed)
+        }),
         { numRuns: 100 }
       )
     })
@@ -272,21 +247,18 @@ describe("Tokenization Adjunction Laws", () => {
 describe("Composed Adjunction: Sentencize then Tokenize", () => {
   it("should preserve information through round trip", () => {
     fc.assert(
-      fc.property(
-        fc.string({ minLength: 10, maxLength: 100 }).filter((s) => s.trim().length > 0),
-        (text) => {
-          // Forward: text → sentences → tokens
-          const sentences = simpleSentencize(text)
-          const allTokens = sentences.flatMap(simpleTokenize)
+      fc.property(Arbitraries.nonEmptyText({ minLength: 10, maxLength: 100 }), (text: string) => {
+        // Forward: text → sentences → tokens
+        const sentences = simpleSentencize(text)
+        const allTokens = sentences.flatMap(simpleTokenize)
 
-          // Backward: tokens → text → sentences
-          const textReconstructed = simpleTokenJoin(allTokens)
-          const sentencesReconstructed = simpleSentencize(textReconstructed)
+        // Backward: tokens → text → sentences
+        const textReconstructed = simpleTokenJoin(allTokens)
+        const sentencesReconstructed = simpleSentencize(textReconstructed)
 
-          // The reconstruction should produce valid sentences
-          return sentencesReconstructed.length > 0
-        }
-      ),
+        // The reconstruction should produce valid sentences
+        return sentencesReconstructed.length > 0
+      }),
       { numRuns: 50 }
     )
   })
@@ -354,22 +326,19 @@ describe("Graph-Based Adjunction Tests", () => {
 describe("Adjunction Naturality Properties", () => {
   it("should commute with text transformations", () => {
     fc.assert(
-      fc.property(
-        fc.string({ minLength: 10, maxLength: 100 }).filter((s) => s.trim().length > 0),
-        (text) => {
-          // Define a transformation: uppercase
-          const transform = (s: string) => s.toUpperCase()
+      fc.property(Arbitraries.nonEmptyText({ minLength: 10, maxLength: 100 }), (text: string) => {
+        // Define a transformation: uppercase
+        const transform = (s: string) => s.toUpperCase()
 
-          // Path 1: transform then sentencize
-          const path1 = simpleSentencize(transform(text))
+        // Path 1: transform then sentencize
+        const path1 = simpleSentencize(transform(text))
 
-          // Path 2: sentencize then transform each
-          const path2 = simpleSentencize(text).map(transform)
+        // Path 2: sentencize then transform each
+        const path2 = simpleSentencize(text).map(transform)
 
-          // These should be equal (naturality)
-          return arrayEquals(path1, path2)
-        }
-      ),
+        // These should be equal (naturality)
+        return arrayEquals(path1, path2)
+      }),
       { numRuns: 50 }
     )
   })

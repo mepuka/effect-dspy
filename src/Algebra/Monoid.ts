@@ -21,9 +21,7 @@
  * are aggregated into a single parent node.
  */
 
-import * as HashMap from "effect/HashMap"
-import * as Equal from "effect/Equal"
-import * as Hash from "effect/Hash"
+import { HashMap, Option as EffectOption } from "effect"
 
 // =============================================================================
 // Core Monoid Type Class
@@ -78,7 +76,8 @@ export const fold = <A>(monoid: Monoid<A>) => (values: Iterable<A>): A => {
  * Combine a non-empty collection
  * Returns None if the collection is empty
  */
-export const combineAll = <A>(monoid: Monoid<A>) => (
+export const combineAll = <A>(monoid: Monoid<A>) =>
+(
   values: ReadonlyArray<A>
 ): A => values.reduce(monoid.combine, monoid.empty)
 
@@ -227,8 +226,11 @@ export const ArrayConcat = <A>(): Monoid<ReadonlyArray<A>> => ({
 export const MultiSet = <K>(): Monoid<HashMap.HashMap<K, number>> => ({
   empty: HashMap.empty(),
   combine: (x, y) =>
-    HashMap.reduceWithIndex(y, x, (map, count, key) =>
-      HashMap.modifyAt(map, key, (existing) => (existing ?? 0) + count)
+    HashMap.reduce(
+      y,
+      x,
+      (map, count, key) =>
+        HashMap.modifyAt(map, key, (existing) => EffectOption.some(EffectOption.getOrElse(existing, () => 0) + count))
     )
 })
 

@@ -70,7 +70,12 @@ testMonoidLaws("StringJoin(', ')", M.StringJoin(", "), fc.string())
 
 testMonoidLaws("NumberSum", M.NumberSum, fc.integer())
 
-testMonoidLaws("NumberProduct", M.NumberProduct, fc.integer())
+// Restrict to safe range to keep multiplication associative under double precision
+testMonoidLaws(
+  "NumberProduct",
+  M.NumberProduct,
+  fc.integer({ min: -100_000, max: 100_000 })
+)
 
 testMonoidLaws(
   "NumberMax",
