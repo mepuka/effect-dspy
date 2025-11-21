@@ -16,11 +16,11 @@
  * - Effect provides the monadic structure for chaining transformations
  */
 
-import * as Effect from "effect/Effect"
 import * as Array from "effect/Array"
-import { NLPService, type BagOfWords } from "./NLPService.js"
+import * as Effect from "effect/Effect"
 import * as M from "./Algebra/Monoid.js"
 import * as NLPMonoid from "./Algebra/NLPMonoid.js"
+import { type BagOfWords, NLPService } from "./NLPService.js"
 
 // =============================================================================
 // Pipeline Result Types
@@ -457,7 +457,8 @@ export const buildCustomPipeline = (
   operations: ReadonlyArray<
     (text: string) => Effect.Effect<string, never, NLPService>
   >
-) => (text: string): Effect.Effect<string, never, NLPService> => {
+) =>
+(text: string): Effect.Effect<string, never, NLPService> => {
   let result: Effect.Effect<string, never, NLPService> = Effect.succeed(text)
   for (const operation of operations) {
     result = Effect.flatMap(result, operation)

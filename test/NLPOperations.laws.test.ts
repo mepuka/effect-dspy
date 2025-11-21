@@ -382,8 +382,7 @@ describe("Metric Space Laws for String Similarity", () => {
             )
           }
         )
-      )
-    )
+      ))
 
     it.layer(NLP.NLPServiceLive)(
       "should satisfy: identical strings have similarity 1",
@@ -520,7 +519,7 @@ describe("Composition Laws", () => {
                 // Results should be identical
                 return (
                   JSON.stringify(Array.from(path1).sort()) ===
-                  JSON.stringify(Array.from(path2).sort())
+                    JSON.stringify(Array.from(path2).sort())
                 )
               })
 

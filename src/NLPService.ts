@@ -247,19 +247,16 @@ const makeNLPService = Effect.sync(() => {
     }))
   }
 
-  const removePunctuationImpl = (text: string): string =>
-    (nlpUtils.string as any).removePunctuations(text)
+  const removePunctuationImpl = (text: string): string => (nlpUtils.string as any).removePunctuations(text)
 
-  const removeExtraSpacesImpl = (text: string): string =>
-    (nlpUtils.string as any).removeExtraSpaces(text)
+  const removeExtraSpacesImpl = (text: string): string => (nlpUtils.string as any).removeExtraSpaces(text)
 
   const stemImpl = (tokens: ReadonlyArray<string>): ReadonlyArray<string> =>
     tokens.map((token) => (nlpUtils.string as any).stem(token))
 
   const removeStopWordsImpl = (
     tokens: ReadonlyArray<string>
-  ): ReadonlyArray<string> =>
-    (nlpUtils.tokens as any).removeWords(tokens as any) as ReadonlyArray<string>
+  ): ReadonlyArray<string> => (nlpUtils.tokens as any).removeWords(tokens as any) as ReadonlyArray<string>
 
   const bagOfWordsImpl = (
     tokens: ReadonlyArray<string>
@@ -279,24 +276,17 @@ const makeNLPService = Effect.sync(() => {
   return {
     sentencize: (text: string) => Effect.sync(() => sentencizeImpl(text)),
     tokenize: (text: string) => Effect.sync(() => tokenizeImpl(text)),
-    tokenizeAnnotated: (text: string) =>
-      Effect.sync(() => tokenizeAnnotatedImpl(text)),
+    tokenizeAnnotated: (text: string) => Effect.sync(() => tokenizeAnnotatedImpl(text)),
     paragraphize: (text: string) => Effect.sync(() => paragraphizeImpl(text)),
-    normalizeWhitespace: (text: string) =>
-      Effect.sync(() => normalizeWhitespaceImpl(text)),
-    removePunctuation: (text: string) =>
-      Effect.sync(() => removePunctuationImpl(text)),
-    removeExtraSpaces: (text: string) =>
-      Effect.sync(() => removeExtraSpacesImpl(text)),
+    normalizeWhitespace: (text: string) => Effect.sync(() => normalizeWhitespaceImpl(text)),
+    removePunctuation: (text: string) => Effect.sync(() => removePunctuationImpl(text)),
+    removeExtraSpaces: (text: string) => Effect.sync(() => removeExtraSpacesImpl(text)),
     stem: (tokens: ReadonlyArray<string>) => Effect.sync(() => stemImpl(tokens)),
-    removeStopWords: (tokens: ReadonlyArray<string>) =>
-      Effect.sync(() => removeStopWordsImpl(tokens)),
+    removeStopWords: (tokens: ReadonlyArray<string>) => Effect.sync(() => removeStopWordsImpl(tokens)),
     wordCount: (text: string) => Effect.sync(() => wordCountImpl(text)),
     ngrams: (text: string, n: number) => Effect.sync(() => ngramsImpl(text, n)),
-    bagOfWords: (tokens: ReadonlyArray<string>) =>
-      Effect.sync(() => bagOfWordsImpl(tokens)),
-    stringSimilarity: (s1: string, s2: string) =>
-      Effect.sync(() => stringSimilarityImpl(s1, s2)),
+    bagOfWords: (tokens: ReadonlyArray<string>) => Effect.sync(() => bagOfWordsImpl(tokens)),
+    stringSimilarity: (s1: string, s2: string) => Effect.sync(() => stringSimilarityImpl(s1, s2)),
     getWink: () => Effect.succeed(nlp)
   } satisfies NLPService
 })

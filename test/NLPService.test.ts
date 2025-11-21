@@ -141,7 +141,7 @@ describe.skip("NLPService", () => {
   describe("Mock Service", () => {
     test("should use mock implementation", async () => {
       const mockLayer = NLP.makeMockNLPService({
-        sentencize: (text) => Effect.succeed(["mocked sentence"])
+        sentencize: () => Effect.succeed(["mocked sentence"])
       })
 
       const result = await Effect.runPromise(
