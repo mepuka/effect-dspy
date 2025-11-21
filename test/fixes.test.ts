@@ -101,45 +101,45 @@ describe("Jaro similarity (no longer inverted)", () => {
 
 describe("tokenizeNodes idempotency", () => {
   it.layer(NLP.NLPServiceLive)(
-      "should not create duplicate tokens on second call",
-      () =>
-        Effect.gen(function*() {
-          // Create a graph with a sentence
-          const graph = yield* TextGraph.fromDocument("Hello world.")
+    "should not create duplicate tokens on second call",
+    () =>
+      Effect.gen(function*() {
+        // Create a graph with a sentence
+        const graph = yield* TextGraph.fromDocument("Hello world.")
 
-          // Tokenize once
-          const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
-          const count1 = TextGraph.nodeCount(tokenized1)
+        // Tokenize once
+        const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
+        const count1 = TextGraph.nodeCount(tokenized1)
 
-          // Tokenize again (should be idempotent)
-          const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
-          const count2 = TextGraph.nodeCount(tokenized2)
+        // Tokenize again (should be idempotent)
+        const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
+        const count2 = TextGraph.nodeCount(tokenized2)
 
-          // Node count should be the same (no duplicates)
-          expect(count2).toBe(count1)
-        })
-    )
+        // Node count should be the same (no duplicates)
+        expect(count2).toBe(count1)
+      })
+  )
 
-    it.layer(NLP.NLPServiceLive)(
-      "should skip sentences that already have tokens",
-      () =>
-        Effect.gen(function*() {
-          const graph = yield* TextGraph.fromDocument("Test sentence.")
+  it.layer(NLP.NLPServiceLive)(
+    "should skip sentences that already have tokens",
+    () =>
+      Effect.gen(function*() {
+        const graph = yield* TextGraph.fromDocument("Test sentence.")
 
-          // First tokenization
-          const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
+        // First tokenization
+        const tokenized1 = yield* TextGraph.tokenizeNodes(graph)
 
-          // Get all token nodes
-          const tokens1 = TextGraph.findNodesByType(tokenized1, "token")
+        // Get all token nodes
+        const tokens1 = TextGraph.findNodesByType(tokenized1, "token")
 
-          // Second tokenization (should skip)
-          const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
-          const tokens2 = TextGraph.findNodesByType(tokenized2, "token")
+        // Second tokenization (should skip)
+        const tokenized2 = yield* TextGraph.tokenizeNodes(tokenized1)
+        const tokens2 = TextGraph.findNodesByType(tokenized2, "token")
 
-          // Token count should be identical
-          expect(tokens2.length).toBe(tokens1.length)
-        })
-    )
+        // Token count should be identical
+        expect(tokens2.length).toBe(tokens1.length)
+      })
+  )
 })
 
 // =============================================================================
@@ -202,27 +202,27 @@ describe("addChildren acyclicity validation", () => {
 
 describe("parallelFeaturePipeline (no duplicate tokenization)", () => {
   it.layer(NLP.NLPServiceLive)(
-      "should tokenize only once and reuse results",
-      () =>
-        Effect.gen(function*() {
-          const text = "Hello world. This is a test."
+    "should tokenize only once and reuse results",
+    () =>
+      Effect.gen(function*() {
+        const text = "Hello world. This is a test."
 
-          // Run pipeline
-          const result = yield* Pipeline.parallelFeaturePipeline(text)
+        // Run pipeline
+        const result = yield* Pipeline.parallelFeaturePipeline(text)
 
-          // Verify all features are present
-          expect(result.tokens.length).toBeGreaterThan(0)
-          expect(result.bigrams.length).toBeGreaterThan(0)
-          expect(result.trigrams.length).toBeGreaterThan(0)
-          expect(result.bow.size).toBeGreaterThan(0)
+        // Verify all features are present
+        expect(result.tokens.length).toBeGreaterThan(0)
+        expect(result.bigrams.length).toBeGreaterThan(0)
+        expect(result.trigrams.length).toBeGreaterThan(0)
+        expect(result.bow.size).toBeGreaterThan(0)
 
-          // The BOW should have the same words as tokens
-          const tokenSet = new Set(result.tokens)
-          result.bow.forEach((_, term) => {
-            expect(tokenSet.has(term)).toBe(true)
-          })
+        // The BOW should have the same words as tokens
+        const tokenSet = new Set(result.tokens)
+        result.bow.forEach((_, term) => {
+          expect(tokenSet.has(term)).toBe(true)
         })
-    )
+      })
+  )
 })
 
 // =============================================================================

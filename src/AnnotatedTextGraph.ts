@@ -203,6 +203,16 @@ export const addPOSAnnotations = (
       const sentNode = Graph.getNode(graph, sentIdx)
       if (sentNode._tag === "None" || !isTextNode(sentNode.value)) continue
 
+      // Check if this sentence already has POS annotations (idempotence)
+      const children = Graph.neighbors(result, sentIdx)
+      const hasPOSAnnotations = children.some((childIdx) => {
+        const childNode = Graph.getNode(result, childIdx)
+        return childNode._tag === "Some" && isPOSNode(childNode.value)
+      })
+
+      // Skip if already annotated
+      if (hasPOSAnnotations) continue
+
       // Get POS tags for this sentence
       const posNodes = yield* backend.posTag(sentNode.value.text)
 
@@ -243,6 +253,16 @@ export const addLemmaAnnotations = (
       const sentNode = Graph.getNode(graph, sentIdx)
       if (sentNode._tag === "None" || !isTextNode(sentNode.value)) continue
 
+      // Check if this sentence already has lemma annotations (idempotence)
+      const children = Graph.neighbors(result, sentIdx)
+      const hasLemmaAnnotations = children.some((childIdx) => {
+        const childNode = Graph.getNode(result, childIdx)
+        return childNode._tag === "Some" && isLemmaNode(childNode.value)
+      })
+
+      // Skip if already annotated
+      if (hasLemmaAnnotations) continue
+
       // Get lemmas for this sentence
       const lemmaNodes = yield* backend.lemmatize(sentNode.value.text)
 
@@ -282,6 +302,16 @@ export const addEntityAnnotations = (
     for (const sentIdx of sentenceNodes) {
       const sentNode = Graph.getNode(graph, sentIdx)
       if (sentNode._tag === "None" || !isTextNode(sentNode.value)) continue
+
+      // Check if this sentence already has entity annotations (idempotence)
+      const children = Graph.neighbors(result, sentIdx)
+      const hasEntityAnnotations = children.some((childIdx) => {
+        const childNode = Graph.getNode(result, childIdx)
+        return childNode._tag === "Some" && isEntityNode(childNode.value)
+      })
+
+      // Skip if already annotated
+      if (hasEntityAnnotations) continue
 
       // Get entities for this sentence
       const entityNodes = yield* backend.extractEntities(sentNode.value.text)
