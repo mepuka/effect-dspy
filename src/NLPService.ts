@@ -10,7 +10,9 @@ import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import model from "wink-eng-lite-web-model"
 import winkNLP from "wink-nlp"
-import * as nlpUtils from "wink-nlp-utils"
+import nlpUtils from "wink-nlp-utils"
+// @ts-ignore - wink-distance doesn't have type definitions
+import distance from "wink-distance"
 
 // =============================================================================
 // Service Definition
@@ -224,19 +226,28 @@ const makeNLPService = Effect.sync(() => {
     return grams
   }
 
-  // New implementations using wink-nlp-utils
+  // New implementations using wink-nlp-utils and wink-distance
+
+  /**
+   * Helper to check if a token is a stop word
+   * Uses removeWords to check - if the token is filtered out, it's a stop word
+   */
+  const isStopWord = (token: string): boolean => {
+    const filtered = nlpUtils.tokens.removeWords([token])
+    return filtered.length === 0
+  }
 
   const tokenizeAnnotatedImpl = (text: string): ReadonlyArray<AnnotatedToken> => {
     const tokens = tokenizeImpl(text)
     return tokens.map((token, index) => ({
       text: token,
       index,
-      isStopWord: nlpUtils.string.isStopWord(token.toLowerCase())
+      isStopWord: isStopWord(token.toLowerCase())
     }))
   }
 
   const removePunctuationImpl = (text: string): string =>
-    nlpUtils.string.removePunctuation(text)
+    nlpUtils.string.removePunctuations(text)
 
   const removeExtraSpacesImpl = (text: string): string =>
     nlpUtils.string.removeExtraSpaces(text)
@@ -247,7 +258,7 @@ const makeNLPService = Effect.sync(() => {
   const removeStopWordsImpl = (
     tokens: ReadonlyArray<string>
   ): ReadonlyArray<string> =>
-    tokens.filter((token) => !nlpUtils.string.isStopWord(token.toLowerCase()))
+    nlpUtils.tokens.removeWords(tokens as any) as ReadonlyArray<string>
 
   const bagOfWordsImpl = (
     tokens: ReadonlyArray<string>
@@ -257,8 +268,12 @@ const makeNLPService = Effect.sync(() => {
     return new Map(Object.entries(bow))
   }
 
-  const stringSimilarityImpl = (s1: string, s2: string): number =>
-    nlpUtils.string.similarity.jaro(s1, s2)
+  const stringSimilarityImpl = (s1: string, s2: string): number => {
+    // wink-distance returns distance (0 = identical, higher = more different)
+    // Convert to similarity (1 = identical, 0 = completely different)
+    const dist = distance.string.jaro(s1, s2)
+    return 1 - dist
+  }
 
   return {
     sentencize: (text: string) => Effect.sync(() => sentencizeImpl(text)),
