@@ -30,13 +30,16 @@
     "@effect/ai": "^0.32.1",
     "@effect/ai-anthropic": "^0.22.0",
     "@effect/ai-google": "^0.11.0",
+    "@effect/platform-node": "^0.101.1",
     "@effect/printer": "^0.47.0",
     "@effect/printer-ansi": "^0.47.0",
     "@effect/typeclass": "^0.38.0",
+    "@modelcontextprotocol/sdk": "^1.22.0",
     "effect": "^3.17.7",
     "wink-eng-lite-web-model": "^1.8.1",
     "wink-nlp": "^2.4.0",
-    "wink-nlp-utils": "^2.1.0"
+    "wink-nlp-utils": "^2.1.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@babel/cli": "^7.24.8",

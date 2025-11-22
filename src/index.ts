@@ -64,3 +64,8 @@ export type {
   AnnotatedTextGraph as AnnotatedTextGraphType,
   MutableAnnotatedTextGraph
 } from "./AnnotatedTextGraph.js"
+
+// MCP Server for agentic NLP
+export * as Mcp from "./Mcp/index.js"
+export { runServer, runServerEffect, createNlpServerLayer, NlpToolkit } from "./Mcp/index.js"
+export type { McpNlpServerConfig } from "./Mcp/Server.js"
