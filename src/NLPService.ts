@@ -650,8 +650,7 @@ export const stringSimilarity = (
  */
 export const posTag = (
   text: string
-): Effect.Effect<ReadonlyArray<S.POSNode>, never, NLPService> =>
-  Effect.flatMap(NLPService, (svc) => svc.posTag(text))
+): Effect.Effect<ReadonlyArray<S.POSNode>, never, NLPService> => Effect.flatMap(NLPService, (svc) => svc.posTag(text))
 
 /**
  * Extract named entities with the live service

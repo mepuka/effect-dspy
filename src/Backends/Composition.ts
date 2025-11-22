@@ -11,11 +11,11 @@
  * - Composition is fallback chaining
  */
 
+import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
-import * as Duration from "effect/Duration"
 import * as Backend from "../NLPBackend.js"
-import * as S from "../Schema.js"
+import type * as S from "../Schema.js"
 
 // =============================================================================
 // Fallback Backend
@@ -39,7 +39,7 @@ export const FallbackBackend = (
   fallback: Layer.Layer<Backend.NLPBackend, Backend.NLPBackendError, never>
 ): Layer.Layer<Backend.NLPBackend, Backend.NLPBackendError, never> =>
   Layer.unwrapEffect(
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       // Try to get primary backend
       const primaryBackend = yield* Effect.provide(Backend.NLPBackend, primary).pipe(
         Effect.option
@@ -66,15 +66,14 @@ export const FallbackBackend = (
           posTagging: primaryValue.capabilities.posTagging || fallbackBackend.capabilities.posTagging,
           lemmatization: primaryValue.capabilities.lemmatization || fallbackBackend.capabilities.lemmatization,
           ner: primaryValue.capabilities.ner || fallbackBackend.capabilities.ner,
-          dependencyParsing:
-            primaryValue.capabilities.dependencyParsing || fallbackBackend.capabilities.dependencyParsing,
-          relationExtraction:
-            primaryValue.capabilities.relationExtraction || fallbackBackend.capabilities.relationExtraction,
-          coreferenceResolution:
-            primaryValue.capabilities.coreferenceResolution ||
+          dependencyParsing: primaryValue.capabilities.dependencyParsing ||
+            fallbackBackend.capabilities.dependencyParsing,
+          relationExtraction: primaryValue.capabilities.relationExtraction ||
+            fallbackBackend.capabilities.relationExtraction,
+          coreferenceResolution: primaryValue.capabilities.coreferenceResolution ||
             fallbackBackend.capabilities.coreferenceResolution,
-          constituencyParsing:
-            primaryValue.capabilities.constituencyParsing || fallbackBackend.capabilities.constituencyParsing
+          constituencyParsing: primaryValue.capabilities.constituencyParsing ||
+            fallbackBackend.capabilities.constituencyParsing
         },
 
         // Core operations with fallback
@@ -142,7 +141,7 @@ export const CachingBackend = (
   }
 ): Layer.Layer<Backend.NLPBackend, Backend.NLPBackendError, never> =>
   Layer.unwrapEffect(
-    Effect.gen(function* () {
+    Effect.gen(function*() {
       const baseBackend = yield* Effect.provide(Backend.NLPBackend, backend)
 
       // Simple Map-based caching (TODO: Replace with proper LRU cache with TTL)
@@ -160,7 +159,11 @@ export const CachingBackend = (
           const cached = tokenizeCache.get(text)
           if (cached) return Effect.succeed(cached)
           return baseBackend.tokenize(text).pipe(
-            Effect.tap((result) => Effect.sync(() => { tokenizeCache.set(text, result) }))
+            Effect.tap((result) =>
+              Effect.sync(() => {
+                tokenizeCache.set(text, result)
+              })
+            )
           )
         },
 
@@ -168,7 +171,11 @@ export const CachingBackend = (
           const cached = sentencizeCache.get(text)
           if (cached) return Effect.succeed(cached)
           return baseBackend.sentencize(text).pipe(
-            Effect.tap((result) => Effect.sync(() => { sentencizeCache.set(text, result) }))
+            Effect.tap((result) =>
+              Effect.sync(() => {
+                sentencizeCache.set(text, result)
+              })
+            )
           )
         },
 
@@ -176,7 +183,11 @@ export const CachingBackend = (
           const cached = posTagCache.get(text)
           if (cached) return Effect.succeed(cached)
           return baseBackend.posTag(text).pipe(
-            Effect.tap((result) => Effect.sync(() => { posTagCache.set(text, result) }))
+            Effect.tap((result) =>
+              Effect.sync(() => {
+                posTagCache.set(text, result)
+              })
+            )
           )
         },
 
@@ -184,7 +195,11 @@ export const CachingBackend = (
           const cached = lemmatizeCache.get(text)
           if (cached) return Effect.succeed(cached)
           return baseBackend.lemmatize(text).pipe(
-            Effect.tap((result) => Effect.sync(() => { lemmatizeCache.set(text, result) }))
+            Effect.tap((result) =>
+              Effect.sync(() => {
+                lemmatizeCache.set(text, result)
+              })
+            )
           )
         },
 
@@ -192,7 +207,11 @@ export const CachingBackend = (
           const cached = entitiesCache.get(text)
           if (cached) return Effect.succeed(cached)
           return baseBackend.extractEntities(text).pipe(
-            Effect.tap((result) => Effect.sync(() => { entitiesCache.set(text, result) }))
+            Effect.tap((result) =>
+              Effect.sync(() => {
+                entitiesCache.set(text, result)
+              })
+            )
           )
         },
 
@@ -249,7 +268,7 @@ export const selectBackend = (
   backends: ReadonlyArray<Layer.Layer<Backend.NLPBackend, Backend.NLPBackendError, never>>,
   requiredCapabilities: ReadonlyArray<keyof Backend.BackendCapabilities>
 ): Effect.Effect<Layer.Layer<Backend.NLPBackend, Backend.NLPBackendError, never>, Backend.BackendInitError> =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     for (const backendLayer of backends) {
       const backend = yield* Effect.provide(Backend.NLPBackend, backendLayer).pipe(
         Effect.option

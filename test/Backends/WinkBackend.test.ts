@@ -215,8 +215,10 @@ describe("WinkBackend - Unsupported Operations", () => {
       )
 
       expect(result._tag).toBe("BackendNotSupported")
-      expect(result.backend).toBe("wink-nlp")
-      expect(result.operation).toBe("parseDependencies")
+      if (result._tag === "BackendNotSupported") {
+        expect(result.backend).toBe("wink-nlp")
+        expect(result.operation).toBe("parseDependencies")
+      }
     }).pipe(Effect.provide(WinkBackend.WinkBackendLive))
   )
 
@@ -228,8 +230,10 @@ describe("WinkBackend - Unsupported Operations", () => {
       )
 
       expect(result._tag).toBe("BackendNotSupported")
-      expect(result.backend).toBe("wink-nlp")
-      expect(result.operation).toBe("extractRelations")
+      if (result._tag === "BackendNotSupported") {
+        expect(result.backend).toBe("wink-nlp")
+        expect(result.operation).toBe("extractRelations")
+      }
     }).pipe(Effect.provide(WinkBackend.WinkBackendLive))
   )
 })

@@ -8,7 +8,7 @@
  * 4. Composition: Order independence where applicable
  */
 
-import { describe, it, expect } from "@effect/vitest"
+import { describe, it } from "@effect/vitest"
 import * as Effect from "effect/Effect"
 import * as fc from "fast-check"
 import * as AnnotatedGraph from "../src/AnnotatedTextGraph.js"
@@ -20,7 +20,6 @@ const sentence = fc
   .array(word, { minLength: 3, maxLength: 10 })
   .map((words) => words.join(" ") + ".")
 const shortSentence = sentence
-const nonEmptyText = fc.array(sentence, { minLength: 1, maxLength: 3 }).map((sentences) => sentences.join(" "))
 
 // =============================================================================
 // Idempotence Laws for Annotation Functions

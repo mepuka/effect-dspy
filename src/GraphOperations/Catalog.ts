@@ -11,7 +11,6 @@
 import * as Effect from "effect/Effect"
 import * as Option from "effect/Option"
 import * as Duration from "effect/Duration"
-import type { GraphNode } from "../EffectGraph.js"
 import * as EG from "../EffectGraph.js"
 import { NLPService } from "../NLPService.js"
 import * as Op from "./Operation.js"

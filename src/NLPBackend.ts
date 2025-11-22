@@ -238,7 +238,11 @@ export const getSupportedCapabilities = (
  * Create a BackendNotSupported error
  */
 export const notSupported = (backend: string, operation: string, message?: string) =>
-  new BackendNotSupported({ backend, operation, message })
+  new BackendNotSupported(
+    message !== undefined
+      ? { backend, operation, message }
+      : { backend, operation }
+  )
 
 /**
  * Create a BackendInitError

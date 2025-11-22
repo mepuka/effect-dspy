@@ -27,6 +27,9 @@
   },
   "dependencies": {
     "@effect-atom/atom-react": "^0.4.0",
+    "@effect/ai": "^0.32.1",
+    "@effect/ai-anthropic": "^0.22.0",
+    "@effect/ai-google": "^0.11.0",
     "@effect/printer": "^0.47.0",
     "@effect/printer-ansi": "^0.47.0",
     "@effect/typeclass": "^0.38.0",
