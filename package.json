@@ -30,6 +30,7 @@
     "@effect/ai": "^0.32.1",
     "@effect/ai-anthropic": "^0.22.0",
     "@effect/ai-google": "^0.11.0",
+    "@effect/platform": "^0.93.3",
     "@effect/platform-node": "^0.101.1",
     "@effect/printer": "^0.47.0",
     "@effect/printer-ansi": "^0.47.0",

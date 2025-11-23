@@ -6,12 +6,14 @@
  */
 
 import { McpSchema, McpServer } from "@effect/ai"
+import { NodeFileSystem } from "@effect/platform-node"
 import { NodeSink, NodeStream } from "@effect/platform-node"
 import * as Effect from "effect/Effect"
 import * as Layer from "effect/Layer"
 import * as Logger from "effect/Logger"
 import { NLPService, NLPServiceLive } from "../NLPService.js"
 import * as Schemas from "./Schemas.js"
+import { StreamingToolkit, StreamingHandlersLayer } from "./Streaming/index.js"
 import { NlpToolkit } from "./Tools.js"
 
 // Re-export McpServerClient for external use
@@ -262,6 +264,15 @@ export const NlpMcpToolkitLayer = McpServer.toolkit(NlpToolkit).pipe(
 )
 
 /**
+ * Create the MCP server layer with streaming toolkit registration.
+ * Uses McpServer.toolkit to register the streaming tools.
+ */
+export const StreamingMcpToolkitLayer = McpServer.toolkit(StreamingToolkit).pipe(
+  Layer.provide(StreamingHandlersLayer),
+  Layer.provide(NodeFileSystem.layer)
+)
+
+/**
  * Create the complete MCP NLP server layer for stdio transport.
  */
 export const createMcpServerLayer = (
@@ -275,7 +286,7 @@ export const createMcpServerLayer = (
   })
 
 /**
- * Create the full server layer combining toolkit and server.
+ * Create the full server layer combining NLP toolkit and server (NLP only).
  */
 export const createNlpServerLayer = (
   config: McpNlpServerConfig = DEFAULT_CONFIG
@@ -285,15 +296,39 @@ export const createNlpServerLayer = (
     Layer.provide(Logger.add(Logger.prettyLogger({ stderr: true })))
   )
 
+/**
+ * Create the full server layer combining all toolkits (NLP + Streaming).
+ */
+export const createFullServerLayer = (
+  config: McpNlpServerConfig = DEFAULT_CONFIG
+) => {
+  const serverLayer = createMcpServerLayer(config)
+  const loggerLayer = Logger.add(Logger.prettyLogger({ stderr: true }))
+
+  // Combine toolkit layers using provideMerge to preserve deps
+  return NlpMcpToolkitLayer.pipe(
+    Layer.provideMerge(StreamingMcpToolkitLayer),
+    Layer.provideMerge(serverLayer),
+    Layer.provideMerge(loggerLayer)
+  )
+}
+
 // =============================================================================
 // Server Runner
 // =============================================================================
 
 /**
- * Run the MCP NLP server.
+ * Run the MCP server with all tools (NLP + Streaming).
  * Uses Effect Layer.launch for lifecycle management.
  */
 export const runServer = (config?: McpNlpServerConfig): Effect.Effect<never> =>
+  Layer.launch(createFullServerLayer(config ?? DEFAULT_CONFIG))
+
+/**
+ * Run the MCP NLP-only server.
+ * Uses Effect Layer.launch for lifecycle management.
+ */
+export const runNlpServer = (config?: McpNlpServerConfig): Effect.Effect<never> =>
   Layer.launch(createNlpServerLayer(config ?? DEFAULT_CONFIG))
 
 /**

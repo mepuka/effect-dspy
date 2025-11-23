@@ -22,10 +22,13 @@
 // Server
 export {
   runServer,
+  runNlpServer,
   runServerEffect,
   createMcpServerLayer,
   createNlpServerLayer,
+  createFullServerLayer,
   NlpMcpToolkitLayer,
+  StreamingMcpToolkitLayer,
   NlpToolkitHandlersLive
 } from "./Server.js"
 export type { McpNlpServerConfig } from "./Server.js"
@@ -72,3 +75,67 @@ export type {
   GraphOutput,
   McpError
 } from "./Schemas.js"
+
+// =============================================================================
+// Streaming Module
+// =============================================================================
+
+/**
+ * Streaming utilities for text processing pipelines.
+ *
+ * Provides:
+ * - **TextStream**: Memory-efficient file streaming
+ * - **Jsonl**: JSONL/NDJSON parsing and writing
+ * - **DatasetLoader**: Load from files, URLs, strings
+ * - **Cache**: In-memory caching with TTL
+ * - **Pipeline**: Composable processing workflows
+ * - **StreamingTools**: MCP tools for streaming operations
+ */
+export * as Streaming from "./Streaming/index.js"
+
+// Re-export commonly used streaming utilities
+export {
+  // TextStream utilities
+  streamLines,
+  readTextFile,
+  readLines,
+  countLines,
+  head,
+  tail,
+  TextStreamError,
+  FileNotFoundError,
+
+  // JSONL utilities
+  streamJsonl,
+  readJsonl,
+  writeJsonl,
+  JsonlParseError,
+
+  // DatasetLoader utilities
+  load,
+  loadText,
+  loadLines,
+  loadJsonl,
+  loadJson,
+  fromFile,
+  fromUrl,
+  NetworkError,
+  DatasetLoadError,
+
+  // Cache utilities
+  Cache,
+  cached,
+  memoize,
+  cacheLayer,
+  defaultCacheLayer,
+
+  // Pipeline utilities
+  Pipeline,
+  StreamPipeline,
+  TextStages,
+
+  // Streaming toolkit for MCP
+  StreamingToolkit,
+  getStreamingToolNames,
+  StreamingHandlersLayer
+} from "./Streaming/index.js"
